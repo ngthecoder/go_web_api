@@ -28,11 +28,11 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	name := query.Get("name")
 
 	if name == "" {
-		name = "World"
+		name = "匿名"
 	}
 
 	response := map[string]string{
-		"message": "Hello " + name,
+		"message": fmt.Sprintf("ようこそ、%sさん！", name),
 	}
 
 	w.Header().Set("Content-Type", "application/json")

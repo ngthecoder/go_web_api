@@ -1,11 +1,17 @@
-# Go Web API
-Go言語とDockerを使用したWeb APIプロジェクト
+# Go Web API + Next.js
+Go言語のバックエンドAPIとNext.jsフロントエンドを使用したWebアプリケーション
+
+# 技術スタック
+- バックエンド：Go 1.22.4
+- フロントエンド：Next.js 15.5.0 + Typescript + Tailwind.css
 
 # 前提条件
 開始する前に以下のものがインストールされていることを確認する
-1. Docker Desktop
-2. Git
-3. VSCodeなどのテキストエディタ
+1. Go 1.22以上
+2. Node.js 18以上
+3. Git
+4. VSCodeなどのテキストエディタ
+5. Docker Desktop（本番用、任意）
 
 # はじめ方
 1. レポジトリをクローン
@@ -13,39 +19,29 @@ Go言語とDockerを使用したWeb APIプロジェクト
 git clone git@github.com:ngthecoder/go_web_api.git
 cd go_web_api
 ```
-2. Dockerの動作確認
+2. バックエンドの起動
 ```bash
-docker --version
-docker compose -version
+cd backend
+go run main.go
 ```
-3. Docker Containerを起動
+- http://localhost:8000で起動
+3. フロントエンドの起動
 ```bash
-docker compose up --build api
+cd frontend
+npm install
+npm run dev
 ```
+- http://localhost:3000で起動
 
-# テストAPI
+# APIテスト
 ブラウザかcurlなどを使用してテストAPIの動作確認をしてください
-- ブラウザ：http://localhost:8000/hello?name={任意の名前}
+- ブラウザ：http://localhost:8000/api/hello?name={任意の名前}
 - コマンドライン
 ```bash
-curl "http://localhost:8000/hello?name={任意の名前}"
+curl "http://localhost:8000/api/hello?name={任意の名前}"
 ```
 
-# 開発ワークフロー
-## 開発モード
+# 本番環境（未完了）
 ```bash
-docker compose up --build api
-```
-- ホスト上のポード8000で実行
-- コンパイル済みバイナリを使用
-- 変更の反映のため`--build`フラッグ
-
-## サービスの停止
-```bash
-docker compose down
-```
-
-## ログの表示
-```bash
-docker compose logs -f api
+docker compose up --build
 ```

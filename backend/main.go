@@ -7,6 +7,22 @@ import (
 	"net/http"
 )
 
+func enableCORS(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next(w, r)
+	}
+}
+
 func helloHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	name := query.Get("name")
@@ -24,9 +40,9 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	fmt.Printf("Starting server on :8000\n")
+	fmt.Printf("ポート8000でAPIサーバーを起動\n")
 
-	http.HandleFunc("/hello", helloHandler)
+	http.HandleFunc("/api/hello", enableCORS(helloHandler))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }

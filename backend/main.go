@@ -1,11 +1,51 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+
+	_ "github.com/mattn/go-sqlite3"
 )
+
+var db *sql.DB
+
+type Ingredient struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Category    string `json:"category"`
+	Calories    int    `json:"calories_per_100g"`
+	Description string `json:"description"`
+}
+
+func initDB() {
+	var err error
+	db, err = sql.Open("sqlite3", "./foods.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	createIngredientsTable := `
+		CREATE TABLE IF NOT EXISTs ingredients (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			category TEXT NOT NULL,
+			calories_per_100g INTEGER NOT NULL,
+			description TEXT
+		);
+	`
+
+	//createRecipes := ``
+
+	//createRecipesIngredients := ``
+
+	_, err = db.Exec(createIngredientsTable)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -39,10 +79,36 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func ingredientsHandler(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query("SELECT * FROM ingredients")
+	if err != nil {
+		http.Error(w, "Database Error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var ingredients []Ingredient
+	for rows.Next() {
+		var ingredient Ingredient
+		rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.Category, &ingredient.Calories, &ingredient.Description)
+		ingredients = append(ingredients, ingredient)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"ingredients": ingredients,
+		"total":       len(ingredients),
+	})
+}
+
 func main() {
+	initDB()
+	defer db.Close()
+
 	fmt.Printf("ポート8000でAPIサーバーを起動\n")
 
 	http.HandleFunc("/api/hello", enableCORS(helloHandler))
+	http.HandleFunc("/api/ingredients", enableCORS(ingredientsHandler))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }

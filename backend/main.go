@@ -28,7 +28,7 @@ func initDB() {
 	}
 
 	createIngredientsTable := `
-		CREATE TABLE IF NOT EXISTs ingredients (
+		CREATE TABLE IF NOT EXISTS ingredients (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
 			category TEXT NOT NULL,
@@ -37,11 +37,44 @@ func initDB() {
 		);
 	`
 
-	//createRecipes := ``
+	createRecipesTable := `
+		CREATE TABLE IF NOT EXISTS recipes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			category TEXT NOT NULL,
+			prep_time_minutes INTEGER NOT NULL,
+			cook_time_minutes INTEGER NOT NULL,
+			servings INTEGER NOT NULL,
+			difficulty TEXT NOT NULL,
+			instructions TEXT NOT NULL,
+			description TEXT
+		);
+	`
 
-	//createRecipesIngredients := ``
+	createRecipesIngredientsTable := `
+		CREATE TABLE IF NOT EXISTS recipes_ingredients (
+			recipe_id INTEGER NOT NULL,
+			ingredient_id INTEGER NOT NULL,
+			quantity REAL NOT NULL,
+			unit TEXT NOT NULL,
+			notes TEXT,
+			PRIMARY KEY (recipe_id, ingredient_id),
+			FOREIGN KEY (recipe_id) REFERENCES recipes (id),
+			FOREIGN KEY (ingredient_id) REFERENCES ingredients (id)
+		)
+	`
 
 	_, err = db.Exec(createIngredientsTable)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = db.Exec(createRecipesTable)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = db.Exec(createRecipesIngredientsTable)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -19,6 +19,38 @@ type Ingredient struct {
 	Calories    int    `json:"calories_per_100g"`
 	Description string `json:"description"`
 }
+type Recipe struct {
+	ID              int    `json:"id"`
+	Name            string `json:"name"`
+	Category        string `json:"prep_time_minutes"`
+	PrepTimeMinutes int    `json:""`
+	CookTimeMinutes int    `json:"cook_time_minutes"`
+	Servings        int    `json:"servings"`
+	Difficulty      string `json:"difficulty"`
+	Instructions    string `json:"instructions"`
+	Description     string `json:"description"`
+}
+
+type RecipeIngredient struct {
+	RecipeID     int     `json:"recipe_id"`
+	IngredientID int     `json:"ingredient_id"`
+	Quantity     float64 `json:"quantity"`
+	Unit         string  `json:"unit"`
+	Notes        string  `json:"notes"`
+}
+
+type RecipeWithIngredients struct {
+	Recipe      Recipe                   `json:"recipe"`
+	Ingredients []IngredientWithQuantity `json:"ingredients"`
+}
+
+type IngredientWithQuantity struct {
+	IngredientID int     `json:"ingredient_id"`
+	Name         string  `json:"name"`
+	Quantity     float64 `json:"quantity"`
+	Unit         string  `json:"unit"`
+	Notes        string  `json:"notes"`
+}
 
 func initDB() {
 	var err error

@@ -155,7 +155,10 @@ func ingredientsHandler(w http.ResponseWriter, r *http.Request) {
 	var ingredients []Ingredient
 	for rows.Next() {
 		var ingredient Ingredient
-		rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.Category, &ingredient.Calories, &ingredient.Description)
+		err = rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.Category, &ingredient.Calories, &ingredient.Description)
+		if err != nil {
+			http.Error(w, "Data Scanning Error", http.StatusInternalServerError)
+		}
 		ingredients = append(ingredients, ingredient)
 	}
 
@@ -163,6 +166,29 @@ func ingredientsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"ingredients": ingredients,
 		"total":       len(ingredients),
+	})
+}
+
+func recipesHandler(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query("SELECT * FROM recipes")
+	if err != nil {
+		http.Error(w, "Database Error", http.StatusInternalServerError)
+	}
+
+	var recipes []Recipe
+	for rows.Next() {
+		var recipe Recipe
+		err = rows.Scan(&recipe.ID, &recipe.Name, &recipe.Category, &recipe.PrepTimeMinutes, &recipe.CookTimeMinutes, &recipe.Servings, &recipe.Difficulty, &recipe.Instructions, &recipe.Description)
+		if err != nil {
+			http.Error(w, "Data Scanning Error", http.StatusInternalServerError)
+		}
+		recipes = append(recipes, recipe)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"recipes": recipes,
+		"total":   len(recipes),
 	})
 }
 
@@ -174,6 +200,7 @@ func main() {
 
 	http.HandleFunc("/api/hello", enableCORS(helloHandler))
 	http.HandleFunc("/api/ingredients", enableCORS(ingredientsHandler))
+	http.HandleFunc("api/recipes", enableCORS(recipesHandler))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }

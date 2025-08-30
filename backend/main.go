@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -652,6 +654,54 @@ func recipesHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func findRecipesByIngredientsHandler(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	ingredientsParams := query.Get("ingredients")
+	fmt.Println(ingredientsParams)
+	matchType := query.Get("match_type")
+	fmt.Println(matchType)
+	limitParams := query.Get("limit")
+	fmt.Println(limitParams)
+
+	if ingredientsParams == "" {
+		http.Error(w, "Missing Required Parameters: ingredients", http.StatusBadRequest)
+		return
+	}
+
+	if matchType == "" || matchType == "exact" {
+		matchType = "partial"
+	}
+
+	limit := 10
+	if limitParams != "" {
+		if l, err := strconv.Atoi(limitParams); err == nil && l > 0 {
+			limit = l
+		}
+	}
+
+	ingredientIDStrings := strings.Split(ingredientsParams, ",")
+	ingredientIDs := make([]int, 0, len(ingredientIDStrings))
+
+	for _, idStr := range ingredientIDStrings {
+		if id, err := strconv.Atoi(strings.TrimSpace(idStr)); err == nil {
+			ingredientIDs = append(ingredientIDs, id)
+		}
+	}
+
+	if len(ingredientIDs) == 0 {
+		http.Error(w, "Invalid ingredient IDs", http.StatusBadRequest)
+		return
+	}
+
+	// SQL Query here
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":              fmt.Sprintf("Looking for recipes with ingredients: %v, match_type: %s, limit: %d", ingredientIDs, matchType, limit),
+		"ingredients_received": ingredientIDs,
+	})
+}
+
 func main() {
 	initDB()
 	populateTestData()
@@ -662,6 +712,7 @@ func main() {
 	http.HandleFunc("/api/hello", enableCORS(helloHandler))
 	http.HandleFunc("/api/ingredients", enableCORS(ingredientsHandler))
 	http.HandleFunc("/api/recipes", enableCORS(recipesHandler))
+	http.HandleFunc("/api/recipes/find-by-ingredients", enableCORS(findRecipesByIngredientsHandler))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }

@@ -22,8 +22,8 @@ type Ingredient struct {
 type Recipe struct {
 	ID              int    `json:"id"`
 	Name            string `json:"name"`
-	Category        string `json:"prep_time_minutes"`
-	PrepTimeMinutes int    `json:""`
+	Category        string `json:"category"`
+	PrepTimeMinutes int    `json:"prep_time_minutes"`
 	CookTimeMinutes int    `json:"cook_time_minutes"`
 	Servings        int    `json:"servings"`
 	Difficulty      string `json:"difficulty"`

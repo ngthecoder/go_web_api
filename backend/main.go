@@ -786,7 +786,7 @@ func findRecipesByIngredientsHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	initDB()
-	populateTestData()
+	// populateTestData()
 	defer db.Close()
 
 	fmt.Printf("ポート8000でAPIサーバーを起動\n")

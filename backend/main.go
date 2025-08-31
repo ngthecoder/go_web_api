@@ -860,6 +860,7 @@ func main() {
 	http.HandleFunc("/api/recipes", enableCORS(recipesHandler))
 	http.HandleFunc("/api/recipes/find-by-ingredients", enableCORS(findRecipesByIngredientsHandler))
 	http.HandleFunc("/api/stats", enableCORS(statsHandler))
+	http.HandleFunc("/api/recipes/find-by-ingredients", enableCORS(findRecipesByIngredientsHandler))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }

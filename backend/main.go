@@ -762,6 +762,93 @@ func recipesHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// 例：http://localhost:8000/api/recipes/shopping-list/1	レシピID1の買い物リストの取得
+// 例：http://localhost:8000/api/recipes/shopping-list/1?have_ingredients=38,50		レシピID1で食材ID38,50所有食材として、除外した買い物リストの取得
+func ShoppingListHandler(w http.ResponseWriter, r *http.Request) {
+	// URLパスからレシピIDを取得
+	pathParts := strings.Split(r.URL.Path, "/")
+	if len(pathParts) < 5 || pathParts[4] == "" {
+		http.Error(w, "Invalid URL format. Use /api/recipes/shopping-list/{id}", http.StatusBadRequest)
+		return
+	}
+
+	recipeID, err := strconv.Atoi(pathParts[4])
+	if err != nil {
+		http.Error(w, "Invalid recipe ID", http.StatusBadRequest)
+		return
+	}
+
+	// クエリパラメータから所有している食材IDを取得
+	haveIngredientsStr := r.URL.Query().Get("have_ingredients")
+	haveIngredientIDs := make(map[int]struct{})
+	if haveIngredientsStr != "" {
+		ids := strings.Split(haveIngredientsStr, ",")
+		for _, idStr := range ids {
+			id, err := strconv.Atoi(idStr)
+			if err == nil {
+				haveIngredientIDs[id] = struct{}{}
+			}
+		}
+	}
+
+	query := `
+		SELECT
+			ri.ingredient_id,
+			i.name,
+			ri.quantity,
+			ri.unit,
+			ri.notes
+		FROM
+			recipe_ingredients AS ri
+		JOIN
+			ingredients AS i ON ri.ingredient_id = i.id
+		WHERE
+			ri.recipe_id = ?;
+	`
+
+	rows, err := db.Query(query, recipeID)
+	if err != nil {
+		log.Println("Database query error:", err)
+		http.Error(w, "Database query error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var shoppingList []IngredientWithQuantity
+	var recipeFound bool
+	for rows.Next() {
+		recipeFound = true
+		var ingredient IngredientWithQuantity
+		err := rows.Scan(
+			&ingredient.IngredientID,
+			&ingredient.Name,
+			&ingredient.Quantity,
+			&ingredient.Unit,
+			&ingredient.Notes,
+		)
+		if err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+
+		// 所有していない食材のみをリストに追加
+		if _, ok := haveIngredientIDs[ingredient.IngredientID]; !ok {
+			shoppingList = append(shoppingList, ingredient)
+		}
+	}
+
+	if !recipeFound {
+		http.Error(w, "Recipe not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"recipe_id":     recipeID,
+		"shopping_list": shoppingList,
+	})
+}
+
 func main() {
 	initDB()
 	populateTestData()
@@ -773,6 +860,7 @@ func main() {
 	http.HandleFunc("/api/ingredients", enableCORS(ingredientsHandler))
 	http.HandleFunc("/api/ingredients/", enableCORS(ingredientDetailsHandler))
 	http.HandleFunc("/api/recipes", enableCORS(recipesHandler))
+	http.HandleFunc("/api/recipes/shopping-list/", enableCORS(ShoppingListHandler))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }

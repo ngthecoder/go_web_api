@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -22,8 +23,8 @@ type Ingredient struct {
 type Recipe struct {
 	ID              int    `json:"id"`
 	Name            string `json:"name"`
-	Category        string `json:"prep_time_minutes"`
-	PrepTimeMinutes int    `json:""`
+	Category        string `json:"category"`
+	PrepTimeMinutes int    `json:"prep_time_minutes"`
 	CookTimeMinutes int    `json:"cook_time_minutes"`
 	Servings        int    `json:"servings"`
 	Difficulty      string `json:"difficulty"`
@@ -166,6 +167,52 @@ func ingredientsHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// /api/recipes/{id} レシピ詳細＋使用食材取得
+func recipeDetailHandler(w http.ResponseWriter, r *http.Request) {
+	// URLからidを抽出
+	idStr := r.URL.Path[len("/api/recipes/"):]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid recipe id", http.StatusBadRequest)
+		return
+	}
+
+	// レシピ情報を取得
+	var recipe Recipe
+	err = db.QueryRow("SELECT id, name, category, prep_time_minutes, cook_time_minutes, servings, difficulty, instructions, description FROM recipes WHERE id = ?", id).
+		Scan(&recipe.ID, &recipe.Name, &recipe.Category, &recipe.PrepTimeMinutes, &recipe.CookTimeMinutes, &recipe.Servings, &recipe.Difficulty, &recipe.Instructions, &recipe.Description)
+	if err != nil {
+		http.Error(w, "Recipe not found", http.StatusNotFound)
+		return
+	}
+
+	// 使用食材を取得
+	rows, err := db.Query(`
+        SELECT i.id, i.name, ri.quantity, ri.unit, ri.notes
+        FROM recipes_ingredients ri
+        JOIN ingredients i ON ri.ingredient_id = i.id
+        WHERE ri.recipe_id = ?`, id)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var ingredients []IngredientWithQuantity
+	for rows.Next() {
+		var ing IngredientWithQuantity
+		rows.Scan(&ing.IngredientID, &ing.Name, &ing.Quantity, &ing.Unit, &ing.Notes)
+		ingredients = append(ingredients, ing)
+	}
+
+	// JSONレスポンス
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(RecipeWithIngredients{
+		Recipe:      recipe,
+		Ingredients: ingredients,
+	})
+}
+
 func main() {
 	initDB()
 	defer db.Close()
@@ -174,6 +221,7 @@ func main() {
 
 	http.HandleFunc("/api/hello", enableCORS(helloHandler))
 	http.HandleFunc("/api/ingredients", enableCORS(ingredientsHandler))
+	http.HandleFunc("/api/recipes/", enableCORS(recipeDetailHandler))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }

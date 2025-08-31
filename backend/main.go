@@ -784,6 +784,70 @@ func findRecipesByIngredientsHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func statsHandler(w http.ResponseWriter, r *http.Request) {
+	type Stats struct {
+		TotalIngredients       int            `json:"total_ingredients"`
+		TotalRecipes           int            `json:"total_recipes"`
+		AvgPrepTime            float32        `json:"avg_prep_time"`
+		AvgCookTime            float32        `json:"avg_cook_time"`
+		DifficultyDistribution map[string]int `json:"difficulty_distribution"`
+	}
+
+	var stats Stats
+	stats.DifficultyDistribution = make(map[string]int)
+
+	err := db.QueryRow(`SELECT COUNT(*) FROM ingredients`).Scan(&stats.TotalIngredients)
+	if err != nil {
+		http.Error(w, "Database scanning error", http.StatusInternalServerError)
+		return
+	}
+
+	err = db.QueryRow(`SELECT COUNT(*) FROM recipes`).Scan(&stats.TotalRecipes)
+	if err != nil {
+		http.Error(w, "Database scanning error", http.StatusInternalServerError)
+		return
+	}
+
+	err = db.QueryRow(`SELECT AVG(prep_time_minutes) FROM recipes`).Scan(&stats.AvgPrepTime)
+	if err != nil {
+		http.Error(w, "Database scanning error", http.StatusInternalServerError)
+		return
+	}
+
+	err = db.QueryRow(`SELECT AVG(cook_time_minutes) FROM recipes`).Scan(&stats.AvgCookTime)
+	if err != nil {
+		http.Error(w, "Database scanning error", http.StatusInternalServerError)
+		return
+	}
+
+	rows, err := db.Query(`
+		SELECT difficulty, COUNT(*)
+		FROM recipes
+		GROUP BY difficulty
+	`)
+	if err != nil {
+		log.Print(err)
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var difficulty string
+		var count int
+		err = rows.Scan(&difficulty, &count)
+		if err != nil {
+			log.Print(err)
+			http.Error(w, "Database scanning error", http.StatusInternalServerError)
+			return
+		}
+		stats.DifficultyDistribution[difficulty] = count
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
+}
+
 func main() {
 	initDB()
 	// populateTestData()
@@ -795,6 +859,7 @@ func main() {
 	http.HandleFunc("/api/ingredients", enableCORS(ingredientsHandler))
 	http.HandleFunc("/api/recipes", enableCORS(recipesHandler))
 	http.HandleFunc("/api/recipes/find-by-ingredients", enableCORS(findRecipesByIngredientsHandler))
+	http.HandleFunc("/api/stats", enableCORS(statsHandler))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }

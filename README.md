@@ -243,7 +243,30 @@ GET /api/recipes/5/shopping-list?have_ingredients=1,4
 }
 ```
 
-**5: GET /api/ingredients/{id}**
+**5: GET /api/ingredients**
+```bash
+http://localhost:8000/api/ingredients?search=トマト&category=野菜&sort=calories&order=desc&page=1&limit=10
+```
+```json
+{
+  "has_next": false,
+  "ingredients": [
+    {
+      "id": 1,
+      "name": "トマト",
+      "category": "野菜",
+      "calories_per_100g": 18,
+      "description": "新鮮な赤いトマト"
+    }
+  ],
+  "page": 1,
+  "page_size": 10,
+  "total": 1,
+  "total_pages": 1
+}
+```
+
+**6: GET /api/ingredients/{id}**
 ```json
 {
   "ingredient": {
@@ -269,7 +292,7 @@ GET /api/recipes/5/shopping-list?have_ingredients=1,4
 }
 ```
 
-**6: GET /api/recipes**
+**7: GET /api/recipes**
 ```bash
 GET /api/recipes?search=カレー&category=夕食&difficulty=medium&max_time=60&sort=total_time&order=asc&page=1&limit=5
 ```
@@ -307,7 +330,7 @@ GET /api/recipes?search=カレー&category=夕食&difficulty=medium&max_time=60&
 }
 ```
 
-**7: GET /api/recipes/{id}**
+**8: GET /api/recipes/{id}**
 ```json
 {
   "recipe": {

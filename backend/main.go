@@ -620,6 +620,7 @@ func ingredientsHandler(w http.ResponseWriter, r *http.Request) {
 		err = rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.Category, &ingredient.Calories, &ingredient.Description)
 		if err != nil {
 			http.Error(w, "Data scanning error", http.StatusInternalServerError)
+			return
 		}
 		ingredients = append(ingredients, ingredient)
 	}
@@ -634,6 +635,7 @@ func recipesHandler(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query("SELECT * FROM recipes")
 	if err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
 	}
 	defer rows.Close()
 
@@ -643,6 +645,7 @@ func recipesHandler(w http.ResponseWriter, r *http.Request) {
 		err = rows.Scan(&recipe.ID, &recipe.Name, &recipe.Category, &recipe.PrepTimeMinutes, &recipe.CookTimeMinutes, &recipe.Servings, &recipe.Difficulty, &recipe.Instructions, &recipe.Description)
 		if err != nil {
 			http.Error(w, "Data scanning error", http.StatusInternalServerError)
+			return
 		}
 		recipes = append(recipes, recipe)
 	}

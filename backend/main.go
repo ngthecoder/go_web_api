@@ -607,8 +607,57 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ingredientsHandler(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT * FROM ingredients")
+	query := r.URL.Query()
+	search := strings.TrimSpace(query.Get("search"))
+	category := strings.TrimSpace(query.Get("category"))
+	sort := query.Get("sort")
+	order := query.Get("order")
+	pageStr := query.Get("page")
+	limitStr := query.Get("limit")
+
+	if sort != "name" && sort != "calories" {
+		sort = "name"
+	}
+
+	if order != "asc" && order != "desc" {
+		order = "asc"
+	}
+
+	page := 1
+	limit := 10
+
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+			limit = l
+		}
+	}
+
+	offset := (page - 1) * limit
+
+	sqlCountQuery, args := buildIngredientCountQuery(search, category)
+
+	var total int
+	err := db.QueryRow(sqlCountQuery, args...).Scan(&total)
 	if err != nil {
+		log.Printf("Counting Query: %s", sqlCountQuery)
+		http.Error(w, "Data scanning error", http.StatusInternalServerError)
+		return
+	}
+
+	totalPages := (total + limit - 1) / limit
+	hasNext := page < totalPages
+
+	sqlQuery, args := buildIngredientQuery(search, category, sort, order, limit, offset)
+
+	rows, err := db.Query(sqlQuery, args...)
+	if err != nil {
+		log.Printf("Query: %s", sqlQuery)
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
@@ -628,7 +677,70 @@ func ingredientsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"ingredients": ingredients,
+		"total":       total,
+		"page":        page,
+		"page_size":   limit,
+		"total_pages": totalPages,
+		"has_next":    hasNext,
 	})
+}
+
+func buildIngredientCountQuery(search, category string) (string, []interface{}) {
+	query := "SELECT COUNT(*) FROM ingredients"
+	conditions := []string{}
+	args := []interface{}{}
+
+	if search != "" {
+		conditions = append(conditions, "(name LIKE ? OR description LIKE ?)")
+		searchTerm := "%" + search + "%"
+		args = append(args, searchTerm, searchTerm)
+	}
+
+	if category != "" {
+		conditions = append(conditions, "category = ?")
+		args = append(args, category)
+	}
+
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	return query, args
+}
+
+func buildIngredientQuery(search, category, sort, order string, limit, offset int) (string, []interface{}) {
+	query := "SELECT id, name, category, calories_per_100g, description FROM ingredients"
+	conditions := []string{}
+	args := []interface{}{}
+
+	if search != "" {
+		conditions = append(conditions, "(name LIKE ? OR description LIKE ?)")
+		searchTerm := "%" + search + "%"
+		args = append(args, searchTerm, searchTerm)
+	}
+
+	if category != "" {
+		conditions = append(conditions, "category = ?")
+		args = append(args, category)
+	}
+
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	orderByClause := ""
+	switch sort {
+	case "calories":
+		orderByClause = "calories_per_100g"
+	default:
+		orderByClause = "name"
+	}
+
+	query += " ORDER BY " + orderByClause + " " + strings.ToUpper(order)
+	query += " LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	return query, args
 }
 
 func recipesHandler(w http.ResponseWriter, r *http.Request) {

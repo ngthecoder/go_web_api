@@ -270,22 +270,40 @@ GET /api/recipes/5/shopping-list?have_ingredients=1,4
 ```
 
 **6: GET /api/recipes**
+```bash
+GET /api/recipes?search=カレー&category=夕食&difficulty=medium&max_time=60&sort=total_time&order=asc&page=1&limit=5
+```
 ```json
 {
+  "has_next": false,
+  "page": 1,
+  "page_size": 5,
   "recipes": [
     {
-      "id": 1,
-      "name": "トマトライス", 
+      "id": 13,
+      "name": "夏野菜カレー",
       "category": "夕食",
-      "prep_time_minutes": 10,
-      "cook_time_minutes": 25,
+      "prep_time_minutes": 20,
+      "cook_time_minutes": 30,
       "servings": 4,
-      "difficulty": "easy",
-      "instructions": "1. フライパンで油を熱する...",
-      "description": "シンプルで美味しいトマトライス"
+      "difficulty": "medium",
+      "instructions": "1. 野菜をカットする\n2. 鍋で野菜を炒める\n3. 水を加えて煮込む\n4. カレールーを溶かし入れる\n5. さらに煮込んで完成",
+      "description": "夏野菜たっぷりのヘルシーカレー"
+    },
+    {
+      "id": 14,
+      "name": "チキンカレー",
+      "category": "夕食",
+      "prep_time_minutes": 15,
+      "cook_time_minutes": 45,
+      "servings": 4,
+      "difficulty": "medium",
+      "instructions": "1. 鶏肉をカットする\n2. 玉ねぎを炒める\n3. 鶏肉を加えて炒める\n4. 水を加えて煮込む\n5. カレールーを加える",
+      "description": "本格的なチキンカレー"
     }
   ],
-  "total": 3
+  "total": 2,
+  "total_pages": 1
 }
 ```
 

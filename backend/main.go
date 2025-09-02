@@ -61,6 +61,11 @@ func initDB() {
 		log.Fatal(err)
 	}
 
+	// 既存のテーブルを削除
+	db.Exec("DROP TABLE IF EXISTS recipe_ingredients")
+	db.Exec("DROP TABLE IF EXISTS recipes")
+	db.Exec("DROP TABLE IF EXISTS ingredients")
+
 	createIngredientsTable := `
 		CREATE TABLE IF NOT EXISTS ingredients (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1114,17 +1119,232 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(stats)
 }
 
+func ingredientDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	// URLパスからIDを取得
+	pathParts := strings.Split(r.URL.Path, "/")
+	if len(pathParts) != 4 || pathParts[3] == "" {
+		http.Error(w, "Invalid URL format. Use /api/ingredients/{id}", http.StatusBadRequest)
+		return
+	}
+
+	ingredientID, err := strconv.Atoi(pathParts[3])
+	if err != nil {
+		http.Error(w, "Invalid ingredient ID", http.StatusBadRequest)
+		return
+	}
+
+	query := `
+        SELECT
+            i.id, i.name, i.category, i.calories_per_100g, i.description,
+            ri.quantity, ri.unit, ri.notes,
+            r.id, r.name, r.category, r.prep_time_minutes, r.cook_time_minutes,
+            r.servings, r.difficulty, r.instructions, r.description
+        FROM
+            ingredients AS i
+        LEFT JOIN
+            recipe_ingredients AS ri ON i.id = ri.ingredient_id
+        LEFT JOIN
+            recipes AS r ON ri.recipe_id = r.id
+        WHERE
+            i.id = ?;
+    `
+
+	rows, err := db.Query(query, ingredientID)
+	if err != nil {
+		http.Error(w, "Database query error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var ingredient Ingredient
+	var recipes []Recipe
+	foundIngredient := false
+
+	for rows.Next() {
+		var (
+			iID, calories                                     int
+			iName, iCategory, iDesc                           string
+			quantity                                          sql.NullFloat64
+			unit, notes                                       sql.NullString
+			rID, prepTime, cookTime, servings                 sql.NullInt64
+			rName, rCategory, difficulty, instructions, rDesc sql.NullString
+		)
+		// SELECT文の全カラムに対応する変数を渡す
+		err := rows.Scan(
+			&iID, &iName, &iCategory, &calories, &iDesc,
+			&quantity, &unit, &notes,
+			&rID, &rName, &rCategory, &prepTime, &cookTime,
+			&servings, &difficulty, &instructions, &rDesc,
+		)
+		if err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+		// 食材情報の取得 (最初の1回だけ)
+		if !foundIngredient {
+			ingredient = Ingredient{
+				ID:          iID,
+				Name:        iName,
+				Category:    iCategory,
+				Calories:    calories,
+				Description: iDesc,
+			}
+			foundIngredient = true
+		}
+
+		// 関連レシピ情報の追加
+		if rID.Valid {
+			recipes = append(recipes, Recipe{
+				ID:              int(rID.Int64),
+				Name:            rName.String,
+				Category:        rCategory.String,
+				PrepTimeMinutes: int(prepTime.Int64),
+				CookTimeMinutes: int(cookTime.Int64),
+				Servings:        int(servings.Int64),
+				Difficulty:      difficulty.String,
+				Instructions:    instructions.String,
+				Description:     rDesc.String,
+			})
+		}
+	}
+
+	if !foundIngredient {
+		http.Error(w, "Ingredient not found", http.StatusNotFound)
+		return
+	}
+
+	response := map[string]interface{}{
+		"ingredient": ingredient,
+		"recipes":    recipes,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func recipesHandler(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query("SELECT * FROM recipes")
+	if err != nil {
+		http.Error(w, "Database Error", http.StatusInternalServerError)
+	}
+
+	var recipes []Recipe
+	for rows.Next() {
+		var recipe Recipe
+		err = rows.Scan(&recipe.ID, &recipe.Name, &recipe.Category, &recipe.PrepTimeMinutes, &recipe.CookTimeMinutes, &recipe.Servings, &recipe.Difficulty, &recipe.Instructions, &recipe.Description)
+		if err != nil {
+			http.Error(w, "Data Scanning Error", http.StatusInternalServerError)
+		}
+		recipes = append(recipes, recipe)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"recipes": recipes,
+		"total":   len(recipes),
+	})
+}
+
+// 例：http://localhost:8000/api/recipes/shopping-list/1	レシピID1の買い物リストの取得
+// 例：http://localhost:8000/api/recipes/shopping-list/1?have_ingredients=38,50		レシピID1で食材ID38,50所有食材として、除外した買い物リストの取得
+func ShoppingListHandler(w http.ResponseWriter, r *http.Request) {
+	// URLパスからレシピIDを取得
+	pathParts := strings.Split(r.URL.Path, "/")
+	if len(pathParts) < 5 || pathParts[4] == "" {
+		http.Error(w, "Invalid URL format. Use /api/recipes/shopping-list/{id}", http.StatusBadRequest)
+		return
+	}
+
+	recipeID, err := strconv.Atoi(pathParts[4])
+	if err != nil {
+		http.Error(w, "Invalid recipe ID", http.StatusBadRequest)
+		return
+	}
+
+	// クエリパラメータから所有している食材IDを取得
+	haveIngredientsStr := r.URL.Query().Get("have_ingredients")
+	haveIngredientIDs := make(map[int]struct{})
+	if haveIngredientsStr != "" {
+		ids := strings.Split(haveIngredientsStr, ",")
+		for _, idStr := range ids {
+			id, err := strconv.Atoi(idStr)
+			if err == nil {
+				haveIngredientIDs[id] = struct{}{}
+			}
+		}
+	}
+
+	query := `
+		SELECT
+			ri.ingredient_id,
+			i.name,
+			ri.quantity,
+			ri.unit,
+			ri.notes
+		FROM
+			recipe_ingredients AS ri
+		JOIN
+			ingredients AS i ON ri.ingredient_id = i.id
+		WHERE
+			ri.recipe_id = ?;
+	`
+
+	rows, err := db.Query(query, recipeID)
+	if err != nil {
+		log.Println("Database query error:", err)
+		http.Error(w, "Database query error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var shoppingList []IngredientWithQuantity
+	var recipeFound bool
+	for rows.Next() {
+		recipeFound = true
+		var ingredient IngredientWithQuantity
+		err := rows.Scan(
+			&ingredient.IngredientID,
+			&ingredient.Name,
+			&ingredient.Quantity,
+			&ingredient.Unit,
+			&ingredient.Notes,
+		)
+		if err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+
+		// 所有していない食材のみをリストに追加
+		if _, ok := haveIngredientIDs[ingredient.IngredientID]; !ok {
+			shoppingList = append(shoppingList, ingredient)
+		}
+	}
+
+	if !recipeFound {
+		http.Error(w, "Recipe not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"recipe_id":     recipeID,
+		"shopping_list": shoppingList,
+	})
+}
+
 func main() {
 	initDB()
-	// populateTestData()
+	populateTestData()
 	defer db.Close()
 
 	fmt.Printf("ポート8000でAPIサーバーを起動\n")
 
 	http.HandleFunc("/api/hello", enableCORS(helloHandler))
 	http.HandleFunc("/api/ingredients", enableCORS(ingredientsHandler))
+	http.HandleFunc("/api/ingredients/", enableCORS(ingredientDetailsHandler))
 	http.HandleFunc("/api/recipes", enableCORS(recipesHandler))
 	http.HandleFunc("/api/recipes/find-by-ingredients", enableCORS(findRecipesByIngredientsHandler))
+	http.HandleFunc("/api/recipes/shopping-list/", enableCORS(ShoppingListHandler))
 	http.HandleFunc("/api/stats", enableCORS(statsHandler))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))

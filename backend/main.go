@@ -1053,11 +1053,11 @@ func main() {
 
 	http.HandleFunc("/api/hello", enableCORS(helloHandler))
 	http.HandleFunc("/api/ingredients", enableCORS(ingredientsHandler))
+	http.HandleFunc("/api/ingredients/", enableCORS(ingredientDetailsHandler))
 	http.HandleFunc("/api/recipes", enableCORS(recipesHandler))
 	http.HandleFunc("/api/recipes/find-by-ingredients", enableCORS(findRecipesByIngredientsHandler))
-	http.HandleFunc("/api/stats", enableCORS(statsHandler))
-	http.HandleFunc("/api/ingredients/", enableCORS(ingredientDetailsHandler))
 	http.HandleFunc("/api/recipes/shopping-list/", enableCORS(ShoppingListHandler))
+	http.HandleFunc("/api/stats", enableCORS(statsHandler))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }

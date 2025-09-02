@@ -142,7 +142,7 @@ ingredients (食材)     recipe_ingredients (中間)     recipes (レシピ)
 | GET | `/recipes` | レシピ一覧取得・検索・フィルタリング | - | `search`, `category`, `max_time`, `difficulty`, `sort`, `order`, `page`, `limit` |
 | GET | `/recipes/find-by-ingredients` | 手持ち食材からレシピ検索 | `ingredients` | `match_type`, `page`, `limit` |
 | GET | `/recipes/{id}` | レシピ詳細＋使用食材取得 | `id` | - |
-| GET | `/recipes/{id}/shopping-list` | レシピの買い物リスト生成 | `id` | `have_ingredients` |
+| GET | `/recipes/shopping-list/{id}` | レシピの買い物リスト生成 | `id` | `have_ingredients` |
 | GET | `/categories` | カテゴリ統計データ取得 | - | - |
 | GET | `/stats` | 全体統計情報取得 | - | - |
 
@@ -172,10 +172,10 @@ GET /api/recipes/find-by-ingredients?ingredients=2,26&match_type=partial&limit=1
 }
 ```
 
-**2: GET /api/recipes/{id}/shopping-list**
+**2: GET /api/recipes/shopping-list/{id}**
 ```bash
 # 例：夏野菜カレー(id=5)の買い物リスト、トマトとナスは持っている
-GET /api/recipes/5/shopping-list?have_ingredients=1,4
+GET /api/recipes/shopping-list/5?have_ingredients=1,4
 ```
 ```json
 {

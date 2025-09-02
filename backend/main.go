@@ -614,7 +614,7 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 func ingredientsHandler(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query("SELECT * FROM ingredients")
 	if err != nil {
-		http.Error(w, "Database Error", http.StatusInternalServerError)
+		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -624,7 +624,8 @@ func ingredientsHandler(w http.ResponseWriter, r *http.Request) {
 		var ingredient Ingredient
 		err = rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.Category, &ingredient.Calories, &ingredient.Description)
 		if err != nil {
-			http.Error(w, "Data Scanning Error", http.StatusInternalServerError)
+			http.Error(w, "Data scanning error", http.StatusInternalServerError)
+			return
 		}
 		ingredients = append(ingredients, ingredient)
 	}
@@ -632,8 +633,202 @@ func ingredientsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"ingredients": ingredients,
-		"total":       len(ingredients),
 	})
+}
+
+func findRecipesByIngredientsHandler(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	ingredientsParams := query.Get("ingredients")
+	matchType := query.Get("match_type")
+	limitParams := query.Get("limit")
+
+	if ingredientsParams == "" {
+		http.Error(w, "Missing required parameters: ingredients", http.StatusBadRequest)
+		return
+	}
+
+	if matchType == "" || matchType == "exact" {
+		matchType = "partial"
+	}
+
+	limit := 10
+	if limitParams != "" {
+		if l, err := strconv.Atoi(limitParams); err == nil && l > 0 {
+			limit = l
+		}
+	}
+
+	ingredientIDStrings := strings.Split(ingredientsParams, ",")
+	ingredientIDs := make([]int, 0, len(ingredientIDStrings))
+
+	for _, idStr := range ingredientIDStrings {
+		if id, err := strconv.Atoi(strings.TrimSpace(idStr)); err == nil {
+			ingredientIDs = append(ingredientIDs, id)
+		}
+	}
+
+	if len(ingredientIDs) == 0 {
+		http.Error(w, "Invalid ingredient IDs", http.StatusBadRequest)
+		return
+	}
+
+	// SQL Query here
+	sqlQuery := ""
+	args := []interface{}{}
+
+	placeholders := make([]string, 0, len(ingredientIDs))
+	for _, ingredientID := range ingredientIDs {
+		placeholders = append(placeholders, "?")
+		args = append(args, ingredientID)
+	}
+	args = append(args, limit)
+
+	if matchType == "partial" {
+		sqlQuery = fmt.Sprintf(
+			`
+			SELECT r.id, r.name, r.category, r.prep_time_minutes, r.cook_time_minutes, r.servings, r.difficulty, r.instructions, r.description,
+			COUNT(ri.ingredient_id) as match_ingredients_count,
+			(SELECT COUNT(*) FROM recipe_ingredients WHERE recipe_id = r.id) as total_ingredients_count
+			FROM recipes r
+			JOIN recipe_ingredients ri on r.id = ri.recipe_id
+			WHERE ri.ingredient_id in (%s)
+			GROUP BY r.id, r.name, r.category, r.prep_time_minutes, r.cook_time_minutes, r.servings, r.difficulty, r.instructions, r.description
+			ORDER BY match_ingredients_count DESC, total_ingredients_count ASC
+			LIMIT ?
+		`, strings.Join(placeholders, ","))
+	}
+
+	if matchType == "exact" {
+		sqlQuery = fmt.Sprintf(
+			`
+			SELECT r.id, r.name, r.category, r.prep_time_minutes, r.cook_time_minutes, r.servings, r.difficulty, r.instructions, r.description,
+			COUNT(ri.ingredient_id) as match_ingredients_count,
+			(SELECT COUNT(*) FROM recipe_ingredients WHERE recipe_id = r.id) as total_ingredients_count
+			FROM recipes r
+			JOIN recipe_ingredients ri on r.id = ri.recipe_id
+			WHERE ri.ingredient_id in (%s)
+			GROUP BY r.id, r.name, r.category, r.prep_time_minutes, r.cook_time_minutes, r.servings, r.difficulty, r.instructions, r.description
+			HAVING COUNT(ri.ingredient_id) = (SELECT COUNT(*) FROM recipe_ingredients WHERE recipe_id = r.id)
+			ORDER BY match_ingredients_count DESC, total_ingredients_count ASC
+			LIMIT ?
+		`, strings.Join(placeholders, ","))
+	}
+
+	rows, err := db.Query(sqlQuery, args...)
+	if err != nil {
+		log.Printf("SQL Error: %v", err)
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	type MatchedRecipe struct {
+		ID                      int     `json:"id"`
+		Name                    string  `json:"name"`
+		Category                string  `json:"category"`
+		PrepTimeMinutes         int     `json:"prep_time_minutes"`
+		CookTimeMinutes         int     `json:"cook_time_minutes"`
+		Servings                int     `json:"servings"`
+		Difficulty              string  `json:"difficulty"`
+		Instructions            string  `json:"instructions"`
+		Description             string  `json:"description"`
+		MatchedIngredientsCount int     `json:"matched_ingredients_count"`
+		TotalIngredientsCount   int     `json:"total_ingredients_count"`
+		MatchScore              float32 `json:"match_score"`
+	}
+
+	matchedRecipes := []MatchedRecipe{}
+	for rows.Next() {
+		var matchedRecipe MatchedRecipe
+		err = rows.Scan(
+			&matchedRecipe.ID,
+			&matchedRecipe.Name,
+			&matchedRecipe.Category,
+			&matchedRecipe.PrepTimeMinutes,
+			&matchedRecipe.CookTimeMinutes,
+			&matchedRecipe.Servings,
+			&matchedRecipe.Difficulty,
+			&matchedRecipe.Instructions,
+			&matchedRecipe.Description,
+			&matchedRecipe.MatchedIngredientsCount,
+			&matchedRecipe.TotalIngredientsCount,
+		)
+		matchedRecipe.MatchScore = float32(matchedRecipe.MatchedIngredientsCount) / float32(matchedRecipe.TotalIngredientsCount)
+		if err != nil {
+			http.Error(w, "Database scanning error", http.StatusInternalServerError)
+			return
+		}
+		matchedRecipes = append(matchedRecipes, matchedRecipe)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"matched_recipes": matchedRecipes,
+	})
+}
+
+func statsHandler(w http.ResponseWriter, r *http.Request) {
+	type Stats struct {
+		TotalIngredients       int            `json:"total_ingredients"`
+		TotalRecipes           int            `json:"total_recipes"`
+		AvgPrepTime            float32        `json:"avg_prep_time"`
+		AvgCookTime            float32        `json:"avg_cook_time"`
+		DifficultyDistribution map[string]int `json:"difficulty_distribution"`
+	}
+
+	var stats Stats
+	stats.DifficultyDistribution = make(map[string]int)
+
+	err := db.QueryRow(`SELECT COUNT(*) FROM ingredients`).Scan(&stats.TotalIngredients)
+	if err != nil {
+		http.Error(w, "Database scanning error", http.StatusInternalServerError)
+		return
+	}
+
+	err = db.QueryRow(`SELECT COUNT(*) FROM recipes`).Scan(&stats.TotalRecipes)
+	if err != nil {
+		http.Error(w, "Database scanning error", http.StatusInternalServerError)
+		return
+	}
+
+	err = db.QueryRow(`SELECT AVG(prep_time_minutes) FROM recipes`).Scan(&stats.AvgPrepTime)
+	if err != nil {
+		http.Error(w, "Database scanning error", http.StatusInternalServerError)
+		return
+	}
+
+	err = db.QueryRow(`SELECT AVG(cook_time_minutes) FROM recipes`).Scan(&stats.AvgCookTime)
+	if err != nil {
+		http.Error(w, "Database scanning error", http.StatusInternalServerError)
+		return
+	}
+
+	rows, err := db.Query(`
+		SELECT difficulty, COUNT(*)
+		FROM recipes
+		GROUP BY difficulty
+	`)
+	if err != nil {
+		log.Print(err)
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var difficulty string
+		var count int
+		err = rows.Scan(&difficulty, &count)
+		if err != nil {
+			log.Print(err)
+			http.Error(w, "Database scanning error", http.StatusInternalServerError)
+			return
+		}
+		stats.DifficultyDistribution[difficulty] = count
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
 }
 
 func ingredientDetailsHandler(w http.ResponseWriter, r *http.Request) {
@@ -858,8 +1053,10 @@ func main() {
 
 	http.HandleFunc("/api/hello", enableCORS(helloHandler))
 	http.HandleFunc("/api/ingredients", enableCORS(ingredientsHandler))
-	http.HandleFunc("/api/ingredients/", enableCORS(ingredientDetailsHandler))
 	http.HandleFunc("/api/recipes", enableCORS(recipesHandler))
+	http.HandleFunc("/api/recipes/find-by-ingredients", enableCORS(findRecipesByIngredientsHandler))
+	http.HandleFunc("/api/stats", enableCORS(statsHandler))
+	http.HandleFunc("/api/ingredients/", enableCORS(ingredientDetailsHandler))
 	http.HandleFunc("/api/recipes/shopping-list/", enableCORS(ShoppingListHandler))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))

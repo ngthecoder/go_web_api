@@ -149,40 +149,26 @@ ingredients (食材)     recipe_ingredients (中間)     recipes (レシピ)
 #### 詳細仕様
 **1: GET /api/recipes/find-by-ingredients**
 ```bash
-# 例：トマト(id=1)、ナス(id=4)、ジャガイモ(id=6)で作れるレシピ検索
-GET /api/recipes/find-by-ingredients?ingredients=1,4,6&match_type=partial&limit=10
+GET /api/recipes/find-by-ingredients?ingredients=2,26&match_type=partial&limit=1
 ```
 ```json
 {
-  "recipes": [
+  "matched_recipes": [
     {
       "id": 5,
-      "name": "夏野菜カレー",
-      "category": "夕食",
-      "prep_time_minutes": 20,
-      "cook_time_minutes": 30,
-      "servings": 4,
-      "difficulty": "easy",
-      "match_score": 0.75,
-      "missing_ingredients": [
-        {
-          "id": 8,
-          "name": "カレールー",
-          "quantity": 1,
-          "unit": "箱"
-        }
-      ],
-      "matched_ingredients": [
-        {"id": 1, "name": "トマト"},
-        {"id": 4, "name": "ナス"},
-        {"id": 6, "name": "ジャガイモ"}
-      ]
+      "name": "オムライス",
+      "category": "昼食",
+      "prep_time_minutes": 15,
+      "cook_time_minutes": 20,
+      "servings": 2,
+      "difficulty": "medium",
+      "instructions": "1. 玉ねぎを炒める\n2. ご飯を加えてチャーハンを作る\n3. 卵を溶いて薄焼き卵を作る\n4. チャーハンを包む",
+      "description": "みんな大好きオムライス",
+      "matched_ingredients_count": 2,
+      "total_ingredients_count": 6,
+      "match_score": 0.33333334
     }
-  ],
-  "total": 12,
-  "page": 1,
-  "page_size": 10,
-  "has_next": true
+  ]
 }
 ```
 

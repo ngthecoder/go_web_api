@@ -245,7 +245,7 @@ GET /api/recipes/5/shopping-list?have_ingredients=1,4
 
 **5: GET /api/ingredients**
 ```bash
-http://localhost:8000/api/ingredients?search=トマト&category=野菜&sort=calories&order=desc&page=1&limit=10
+GET /api/ingredients?search=トマト&category=野菜&sort=calories&order=desc&page=1&limit=10
 ```
 ```json
 {

@@ -1126,6 +1126,7 @@ func categoriesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	resp := CategoryCountsResponse{IngredientCategories: ingCounts, RecipeCategories: recCounts}
 	json.NewEncoder(w).Encode(resp)
+}
 
 func statsHandler(w http.ResponseWriter, r *http.Request) {
 	type Stats struct {

@@ -127,6 +127,28 @@ func initDB() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	createIndexes()
+}
+
+func createIndexes() {
+	indexQueries := []string{
+		"CREATE INDEX IF NOT EXISTS idx_ingredients_category ON ingredients(category)",
+		"CREATE INDEX IF NOT EXISTS idx_ingredients_name ON ingredients(name)",
+		"CREATE INDEX IF NOT EXISTS idx_recipes_category ON recipes(category)",
+		"CREATE INDEX IF NOT EXISTS idx_recipes_difficulty ON recipes(difficulty)",
+		"CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_recipe_id ON recipe_ingredients(recipe_id)",
+		"CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_ingredient_id ON recipe_ingredients(ingredient_id)",
+	}
+
+	for _, query := range indexQueries {
+		_, err := db.Exec(query)
+		if err != nil {
+			log.Printf("Error creating index: %v", err)
+		}
+	}
+
+	fmt.Println("Database indexes created successfully!")
 }
 
 func populateTestData() {

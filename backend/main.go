@@ -1222,32 +1222,9 @@ func ingredientDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func recipesHandler(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT * FROM recipes")
-	if err != nil {
-		http.Error(w, "Database Error", http.StatusInternalServerError)
-	}
-
-	var recipes []Recipe
-	for rows.Next() {
-		var recipe Recipe
-		err = rows.Scan(&recipe.ID, &recipe.Name, &recipe.Category, &recipe.PrepTimeMinutes, &recipe.CookTimeMinutes, &recipe.Servings, &recipe.Difficulty, &recipe.Instructions, &recipe.Description)
-		if err != nil {
-			http.Error(w, "Data Scanning Error", http.StatusInternalServerError)
-		}
-		recipes = append(recipes, recipe)
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"recipes": recipes,
-		"total":   len(recipes),
-	})
-}
-
 // 例：http://localhost:8000/api/recipes/shopping-list/1	レシピID1の買い物リストの取得
 // 例：http://localhost:8000/api/recipes/shopping-list/1?have_ingredients=38,50		レシピID1で食材ID38,50所有食材として、除外した買い物リストの取得
-func ShoppingListHandler(w http.ResponseWriter, r *http.Request) {
+func shoppingListHandler(w http.ResponseWriter, r *http.Request) {
 	// URLパスからレシピIDを取得
 	pathParts := strings.Split(r.URL.Path, "/")
 	if len(pathParts) < 5 || pathParts[4] == "" {
@@ -1344,7 +1321,7 @@ func main() {
 	http.HandleFunc("/api/ingredients/", enableCORS(ingredientDetailsHandler))
 	http.HandleFunc("/api/recipes", enableCORS(recipesHandler))
 	http.HandleFunc("/api/recipes/find-by-ingredients", enableCORS(findRecipesByIngredientsHandler))
-	http.HandleFunc("/api/recipes/shopping-list/", enableCORS(ShoppingListHandler))
+	http.HandleFunc("/api/recipes/shopping-list/", enableCORS(shoppingListHandler))
 	http.HandleFunc("/api/stats", enableCORS(statsHandler))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))

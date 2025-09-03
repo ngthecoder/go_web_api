@@ -1060,9 +1060,7 @@ func findRecipesByIngredientsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"matched_recipes": matchedRecipes,
-	})
+	json.NewEncoder(w).Encode(matchedRecipes)
 }
 
 // /api/categories カテゴリ別の件数（ingredients / recipes）を返す

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -148,7 +149,7 @@ func createIndexes() {
 		}
 	}
 
-	fmt.Println("Database indexes created successfully!")
+	fmt.Println("SQLインデックスの生成完了")
 }
 
 func populateTestData() {
@@ -263,7 +264,7 @@ func populateTestData() {
 		_, err := db.Exec("INSERT INTO ingredients (name, category, calories_per_100g, description) VALUES (?, ?, ?, ?)",
 			ing.name, ing.category, ing.calories, ing.description)
 		if err != nil {
-			log.Printf("Error inserting ingredient %s: %v", ing.name, err)
+			log.Printf("%sをingredientsテーブルへデータ追加中のエラー: %v", ing.name, err)
 		}
 	}
 
@@ -422,7 +423,7 @@ func populateTestData() {
 						  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			rec.name, rec.category, rec.prepTime, rec.cookTime, rec.servings, rec.difficulty, rec.instructions, rec.description)
 		if err != nil {
-			log.Printf("Error inserting recipe %s: %v", rec.name, err)
+			log.Printf("%sをrecipesテーブルへデータ追加中のエラー: %v", rec.name, err)
 		}
 	}
 
@@ -602,13 +603,11 @@ func populateTestData() {
 						  VALUES (?, ?, ?, ?, ?)`,
 			ri.recipeID, ri.ingredientID, ri.quantity, ri.unit, ri.notes)
 		if err != nil {
-			log.Printf("Error inserting recipe_ingredient: %v", err)
+			log.Printf("recipes_ingredientsテーブルへデータ追加中のエラー: %v", err)
 		}
 	}
 
-	fmt.Println("Test data populated successfully!")
-	fmt.Printf("Inserted %d ingredients, %d recipes, and %d recipe-ingredient relationships\n",
-		len(ingredientsData), len(recipesData), len(recipeIngredientsData))
+	fmt.Println("テストデータの生成が完了")
 }
 
 func enableCORS(next http.HandlerFunc) http.HandlerFunc {
@@ -624,6 +623,19 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		next(w, r)
+	}
+}
+
+func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		log.Printf("%s %sを開始", r.Method, r.URL.Path)
+
+		next(w, r)
+
+		duration := time.Since(start)
+		log.Printf("%s %sを%vで完了", r.Method, r.URL.Path, duration)
 	}
 }
 
@@ -1470,15 +1482,15 @@ func main() {
 
 	fmt.Printf("ポート8000でAPIサーバーを起動\n")
 
-	http.HandleFunc("/api/hello", enableCORS(helloHandler))
-	http.HandleFunc("/api/ingredients", enableCORS(ingredientsHandler))
-	http.HandleFunc("/api/ingredients/", enableCORS(ingredientDetailsHandler))
-	http.HandleFunc("/api/recipes", enableCORS(recipesHandler))
-	http.HandleFunc("/api/recipes/", enableCORS(recipeDetailHandler))
-	http.HandleFunc("/api/recipes/find-by-ingredients", enableCORS(findRecipesByIngredientsHandler))
-	http.HandleFunc("/api/categories", enableCORS(categoriesHandler))
-	http.HandleFunc("/api/recipes/shopping-list/", enableCORS(shoppingListHandler))
-	http.HandleFunc("/api/stats", enableCORS(statsHandler))
+	http.HandleFunc("/api/hello", loggingMiddleware(enableCORS(helloHandler)))
+	http.HandleFunc("/api/ingredients", loggingMiddleware(enableCORS(ingredientsHandler)))
+	http.HandleFunc("/api/ingredients/", loggingMiddleware(enableCORS(ingredientDetailsHandler)))
+	http.HandleFunc("/api/recipes", loggingMiddleware(enableCORS(recipesHandler)))
+	http.HandleFunc("/api/recipes/", loggingMiddleware(enableCORS(recipeDetailHandler)))
+	http.HandleFunc("/api/recipes/find-by-ingredients", loggingMiddleware(enableCORS(findRecipesByIngredientsHandler)))
+	http.HandleFunc("/api/categories", loggingMiddleware(enableCORS(categoriesHandler)))
+	http.HandleFunc("/api/recipes/shopping-list/", loggingMiddleware(enableCORS(shoppingListHandler)))
+	http.HandleFunc("/api/stats", loggingMiddleware(enableCORS(statsHandler)))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }

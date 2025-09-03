@@ -54,6 +54,16 @@ type IngredientWithQuantity struct {
 	Notes        string  `json:"notes"`
 }
 
+type CategoryCount struct {
+	Category string `json:"category"`
+	Count    int    `json:"count"`
+}
+
+type CategoryCountsResponse struct {
+	IngredientCategories []CategoryCount `json:"ingredient_categories"`
+	RecipeCategories     []CategoryCount `json:"recipe_categories"`
+}
+
 func initDB() {
 	var err error
 	db, err = sql.Open("sqlite3", "./foods.db")
@@ -1055,6 +1065,68 @@ func findRecipesByIngredientsHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// /api/categories カテゴリ別の件数（ingredients / recipes）を返す
+func categoriesHandler(w http.ResponseWriter, r *http.Request) {
+
+	// 食材のカテゴリ件数
+	ingRows, err := db.Query(`
+		SELECT category, COUNT(*)
+		FROM ingredients
+		GROUP BY category
+		ORDER BY category
+	`)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer ingRows.Close()
+
+	var ingCounts []CategoryCount
+	for ingRows.Next() {
+		var c CategoryCount
+		if err := ingRows.Scan(&c.Category, &c.Count); err != nil {
+			http.Error(w, "Data scanning error", http.StatusInternalServerError)
+			return
+		}
+		ingCounts = append(ingCounts, c)
+	}
+	if err := ingRows.Err(); err != nil {
+		http.Error(w, "Data scanning error", http.StatusInternalServerError)
+		return
+	}
+
+	// レシピのカテゴリ件数
+	recRows, err := db.Query(`
+		SELECT category, COUNT(*)
+		FROM recipes
+		GROUP BY category
+		ORDER BY category
+	`)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer recRows.Close()
+
+	var recCounts []CategoryCount
+	for recRows.Next() {
+		var c CategoryCount
+		if err := recRows.Scan(&c.Category, &c.Count); err != nil {
+			http.Error(w, "Data scanning error", http.StatusInternalServerError)
+			return
+		}
+		recCounts = append(recCounts, c)
+	}
+	if err := recRows.Err(); err != nil {
+		http.Error(w, "Data scanning error", http.StatusInternalServerError)
+		return
+	}
+
+	// JSONレスポンス（構造体ベース）
+	w.Header().Set("Content-Type", "application/json")
+	resp := CategoryCountsResponse{IngredientCategories: ingCounts, RecipeCategories: recCounts}
+	json.NewEncoder(w).Encode(resp)
+
 func statsHandler(w http.ResponseWriter, r *http.Request) {
 	type Stats struct {
 		TotalIngredients       int            `json:"total_ingredients"`
@@ -1321,6 +1393,7 @@ func main() {
 	http.HandleFunc("/api/ingredients/", enableCORS(ingredientDetailsHandler))
 	http.HandleFunc("/api/recipes", enableCORS(recipesHandler))
 	http.HandleFunc("/api/recipes/find-by-ingredients", enableCORS(findRecipesByIngredientsHandler))
+	http.HandleFunc("/api/categories", enableCORS(categoriesHandler))
 	http.HandleFunc("/api/recipes/shopping-list/", enableCORS(shoppingListHandler))
 	http.HandleFunc("/api/stats", enableCORS(statsHandler))
 

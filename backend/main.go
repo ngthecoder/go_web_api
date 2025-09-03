@@ -1382,6 +1382,67 @@ func shoppingListHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// /api/recipes/{id} レシピ詳細＋使用食材取得
+func recipeDetailHandler(w http.ResponseWriter, r *http.Request) {
+	// URLからIDを取得
+	idStr := r.URL.Path[len("/api/recipes/"):]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid recipe id", http.StatusBadRequest)
+		return
+	}
+
+	// レシピ情報を取得
+	var recipe Recipe
+	err = db.QueryRow(`
+		SELECT id, name, category, prep_time_minutes, cook_time_minutes, servings, difficulty, instructions, description 
+		FROM recipes WHERE id = ?`, id).
+		Scan(&recipe.ID, &recipe.Name, &recipe.Category, &recipe.PrepTimeMinutes, &recipe.CookTimeMinutes,
+			&recipe.Servings, &recipe.Difficulty, &recipe.Instructions, &recipe.Description)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Recipe not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	// 使用食材を取得
+	rows, err := db.Query(`
+		SELECT i.id, i.name, ri.quantity, ri.unit, ri.notes
+		FROM recipe_ingredients ri
+		JOIN ingredients i ON ri.ingredient_id = i.id
+		WHERE ri.recipe_id = ?`, id)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Recipe not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var ingredients []IngredientWithQuantity
+	for rows.Next() {
+		var ing IngredientWithQuantity
+		err := rows.Scan(&ing.IngredientID, &ing.Name, &ing.Quantity, &ing.Unit, &ing.Notes)
+		if err != nil {
+			http.Error(w, "Data scanning error", http.StatusInternalServerError)
+			return
+		}
+		ingredients = append(ingredients, ing)
+	}
+	if err = rows.Err(); err != nil {
+		http.Error(w, "Data scanning error", http.StatusInternalServerError)
+		return
+	}
+
+	// JSONレスポンス
+	w.Header().Set("Content-Type", "application/json")
+	resp := RecipeWithIngredients{Recipe: recipe, Ingredients: ingredients}
+	json.NewEncoder(w).Encode(resp)
+}
+
 func main() {
 	initDB()
 	populateTestData()
@@ -1393,6 +1454,7 @@ func main() {
 	http.HandleFunc("/api/ingredients", enableCORS(ingredientsHandler))
 	http.HandleFunc("/api/ingredients/", enableCORS(ingredientDetailsHandler))
 	http.HandleFunc("/api/recipes", enableCORS(recipesHandler))
+	http.HandleFunc("/api/recipes/", enableCORS(recipeDetailHandler))
 	http.HandleFunc("/api/recipes/find-by-ingredients", enableCORS(findRecipesByIngredientsHandler))
 	http.HandleFunc("/api/categories", enableCORS(categoriesHandler))
 	http.HandleFunc("/api/recipes/shopping-list/", enableCORS(shoppingListHandler))

@@ -46,7 +46,7 @@ ingredients（食材テーブル）
 - id (INTEGER)
 - name (TEXT)
 - category (TEXT)
-- alories_per_100g (INTEGER)
+- calories_per_100g (INTEGER)
 - description (TEXT)
 - PRIMARY KEY: id
 

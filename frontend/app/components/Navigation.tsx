@@ -13,6 +13,9 @@ export default function Navigation() {
             <Link href="/" className="text-gray-700 hover:text-blue-600">
               レシピ一覧
             </Link>
+            <Link href="/ingredients" className="text-gray-700 hover:text-blue-600">
+              食材一覧
+            </Link>
             <Link href="/find-recipes" className="text-gray-700 hover:text-blue-600">
               食材検索
             </Link>

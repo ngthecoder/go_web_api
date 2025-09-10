@@ -78,11 +78,11 @@ func (s *AuthService) userExists(email, username string) (bool, error) {
 func (s *AuthService) loginUser(loginRequest LoginRequest) (*AuthResponse, error) {
 	verified, err := s.verifyPassword(loginRequest.Email, loginRequest.Password)
 	if err != nil {
-		return nil, ErrInvalidCredentials
+		return nil, err
 	}
 
 	if !verified {
-		return nil, err
+		return nil, ErrInvalidCredentials
 	}
 
 	user, err := s.getUserByEmail(loginRequest.Email)

@@ -165,9 +165,9 @@ func (s *AuthService) verifyPassword(email string, password string) (bool, error
 	}
 
 	salt := storedDecodedPasswordHashBytes[:16]
+	correctHash := storedDecodedPasswordHashBytes[16:]
 
 	hash := argon2.IDKey([]byte(password), salt, 3, 64*1024, 2, 16)
-	passwordHash := append(salt, hash...)
 
-	return subtle.ConstantTimeCompare(storedDecodedPasswordHashBytes, passwordHash) == 1, nil
+	return subtle.ConstantTimeCompare(correctHash, hash) == 1, nil
 }

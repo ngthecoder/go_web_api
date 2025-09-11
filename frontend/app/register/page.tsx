@@ -27,6 +27,7 @@ export default function RegisterPage() {
 
             localStorage.setItem('token', response.token);
             localStorage.setItem('user', JSON.stringify(response.user));
+            
             setMessage("Registration completed")
             setFormData({ username: "", email: "", password: "" });
         }

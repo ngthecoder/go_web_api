@@ -47,7 +47,7 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="h-screen flex items-center justify-center bg-gray-50 overflow-hidden">
+        <div className="h-screen flex items-center justify-center overflow-hidden">
             <div className="w-full max-w-2xl mx-auto px-8">
                 <h2 className="text-center text-3xl font-extrabold text-gray-900">
                     Create your account

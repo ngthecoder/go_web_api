@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { AuthResponse, RegisterRequest } from "@/lib/types"
+import { registerUser } from "@/lib/auth"
 
 export default function RegisterPage() {
 
     const [isLoading, setLoading] = useState(false)
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
 
     const [formData, setFormData] = useState<RegisterRequest>({
         username: "",
@@ -17,33 +20,20 @@ export default function RegisterPage() {
         e.preventDefault();
         console.log('Form submitted!');
         
-        
         try {
             setLoading(true)
 
-            const response = await fetch("http://localhost:8000/api/auth/register", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(formData)
-            })
+            const response:AuthResponse = await registerUser(formData)
 
-            if (response.ok) {
-                const data: AuthResponse = await response.json()
-                console.log(data)
-                alert("Registration completed!")
-            }
-            else {
-                const error = await response.text()
-                alert("Registration failed: " + error)
-            }
-
-            setLoading(false)
+            localStorage.setItem('token', response.token);
+            localStorage.setItem('user', JSON.stringify(response.user));
+            setMessage("Registration completed")
+            setFormData({ username: "", email: "", password: "" });
         }
-        catch(error) {
-            alert("Network error occured: " + error)
-
+        catch(error: any) {
+            setError(error)
+        }
+        finally {
             setLoading(false)
         }
     };
@@ -61,6 +51,24 @@ export default function RegisterPage() {
                 <h2 className="text-center text-3xl font-extrabold text-gray-900">
                     Create your account
                 </h2>
+
+                {message && (
+                    <div className="mt-6 mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                        <div className="flex">
+                            <div className="text-green-500 mr-3">✓</div>
+                            <div>{message}</div>
+                        </div>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="mt-6 mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                        <div className="flex">
+                            <div className="text-red-500 mr-3">✕</div>
+                            <div>{error}</div>
+                        </div>
+                    </div>
+                )}
         
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-4">

@@ -674,22 +674,6 @@ func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query()
-	name := query.Get("name")
-
-	if name == "" {
-		name = "匿名"
-	}
-
-	response := map[string]string{
-		"message": fmt.Sprintf("ようこそ、%sさん！", name),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
 func ingredientsHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	search := strings.TrimSpace(query.Get("search"))
@@ -1516,7 +1500,6 @@ func main() {
 	http.HandleFunc("/api/auth/register", loggingMiddleware(enableCORS(authHandler.RegisterHandler)))
 	http.HandleFunc("/api/auth/login", loggingMiddleware(enableCORS(authHandler.LoginHandler)))
 
-	http.HandleFunc("/api/hello", loggingMiddleware(enableCORS(helloHandler)))
 	http.HandleFunc("/api/ingredients", loggingMiddleware(enableCORS(ingredientsHandler)))
 	http.HandleFunc("/api/ingredients/", loggingMiddleware(enableCORS(ingredientDetailsHandler)))
 	http.HandleFunc("/api/recipes", loggingMiddleware(enableCORS(recipesHandler)))

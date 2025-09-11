@@ -15,6 +15,24 @@ func NewAuthHandler(service *AuthService) *AuthHandler {
 	}
 }
 
+func (h *AuthHandler) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+
+		if authHeader == "" {
+			http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+		}
+
+		claims, err := h.service.validateJWT(authHeader)
+		if err != nil {
+			http.Error(w, "Invalid or expired JWT token", http.StatusUnauthorized)
+		}
+
+		r.Header.Set("X-User-ID", claims.UserID)
+		next(w, r)
+	}
+}
+
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

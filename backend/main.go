@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/ngthecoder/go_web_api/internal/auth"
 )
 
 var db *sql.DB
@@ -72,10 +74,11 @@ func initDB() {
 		log.Fatal(err)
 	}
 
-	// 既存のテーブルを削除
 	db.Exec("DROP TABLE IF EXISTS recipe_ingredients")
 	db.Exec("DROP TABLE IF EXISTS recipes")
 	db.Exec("DROP TABLE IF EXISTS ingredients")
+	db.Exec("DROP TABLE IF EXISTS users")
+	db.Exec("DROP TABLE IF EXISTS user_liked_recipes")
 
 	createIngredientsTable := `
 		CREATE TABLE IF NOT EXISTS ingredients (
@@ -114,6 +117,28 @@ func initDB() {
 		)
 	`
 
+	createUsersTable := `
+		CREATE TABLE IF NOT EXISTS users (
+			id TEXT PRIMARY KEY,
+			username TEXT UNIQUE NOT NULL,
+			email TEXT UNIQUE NOT NULL,
+			password_hash TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		);
+	`
+
+	createUserLikedRecipesTable := `
+		CREATE TABLE IF NOT EXISTS user_liked_recipes (
+			user_id TEXT NOT NULL,
+			recipe_id INTEGER NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (user_id, recipe_id),
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
+		);
+	`
+
 	_, err = db.Exec(createIngredientsTable)
 	if err != nil {
 		log.Fatal(err)
@@ -129,6 +154,16 @@ func initDB() {
 		log.Fatal(err)
 	}
 
+	_, err = db.Exec(createUsersTable)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = db.Exec(createUserLikedRecipesTable)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	createIndexes()
 }
 
@@ -140,6 +175,8 @@ func createIndexes() {
 		"CREATE INDEX IF NOT EXISTS idx_recipes_difficulty ON recipes(difficulty)",
 		"CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_recipe_id ON recipe_ingredients(recipe_id)",
 		"CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_ingredient_id ON recipe_ingredients(ingredient_id)",
+		"CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);",
+		"CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);",
 	}
 
 	for _, query := range indexQueries {
@@ -148,8 +185,6 @@ func createIndexes() {
 			log.Printf("Error creating index: %v", err)
 		}
 	}
-
-	fmt.Println("SQLインデックスの生成完了")
 }
 
 func populateTestData() {
@@ -607,7 +642,7 @@ func populateTestData() {
 		}
 	}
 
-	fmt.Println("テストデータの生成が完了")
+	fmt.Println("Test data populaated")
 }
 
 func enableCORS(next http.HandlerFunc) http.HandlerFunc {
@@ -637,22 +672,6 @@ func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		duration := time.Since(start)
 		log.Printf("%s %sを%vで完了", r.Method, r.URL.Path, duration)
 	}
-}
-
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query()
-	name := query.Get("name")
-
-	if name == "" {
-		name = "匿名"
-	}
-
-	response := map[string]string{
-		"message": fmt.Sprintf("ようこそ、%sさん！", name),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
 }
 
 func ingredientsHandler(w http.ResponseWriter, r *http.Request) {
@@ -1097,7 +1116,6 @@ func findRecipesByIngredientsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(matchedRecipes)
 }
 
-// /api/categories カテゴリ別の件数（ingredients / recipes）を返す
 func categoriesHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 食材のカテゴリ件数
@@ -1225,7 +1243,6 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ingredientDetailsHandler(w http.ResponseWriter, r *http.Request) {
-	// URLパスからIDを取得
 	pathParts := strings.Split(r.URL.Path, "/")
 	if len(pathParts) != 4 || pathParts[3] == "" {
 		http.Error(w, "Invalid URL format. Use /api/ingredients/{id}", http.StatusBadRequest)
@@ -1274,7 +1291,7 @@ func ingredientDetailsHandler(w http.ResponseWriter, r *http.Request) {
 			rID, prepTime, cookTime, servings                 sql.NullInt64
 			rName, rCategory, difficulty, instructions, rDesc sql.NullString
 		)
-		// SELECT文の全カラムに対応する変数を渡す
+
 		err := rows.Scan(
 			&iID, &iName, &iCategory, &calories, &iDesc,
 			&quantity, &unit, &notes,
@@ -1285,7 +1302,7 @@ func ingredientDetailsHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println("Scan error:", err)
 			continue
 		}
-		// 食材情報の取得 (最初の1回だけ)
+
 		if !foundIngredient {
 			ingredient = Ingredient{
 				ID:          iID,
@@ -1297,7 +1314,6 @@ func ingredientDetailsHandler(w http.ResponseWriter, r *http.Request) {
 			foundIngredient = true
 		}
 
-		// 関連レシピ情報の追加
 		if rID.Valid {
 			recipes = append(recipes, Recipe{
 				ID:              int(rID.Int64),
@@ -1327,10 +1343,7 @@ func ingredientDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// 例：http://localhost:8000/api/recipes/shopping-list/1	レシピID1の買い物リストの取得
-// 例：http://localhost:8000/api/recipes/shopping-list/1?have_ingredients=38,50		レシピID1で食材ID38,50所有食材として、除外した買い物リストの取得
 func shoppingListHandler(w http.ResponseWriter, r *http.Request) {
-	// URLパスからレシピIDを取得
 	pathParts := strings.Split(r.URL.Path, "/")
 	if len(pathParts) < 5 || pathParts[4] == "" {
 		http.Error(w, "Invalid URL format. Use /api/recipes/shopping-list/{id}", http.StatusBadRequest)
@@ -1343,7 +1356,6 @@ func shoppingListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// クエリパラメータから所有している食材IDを取得
 	haveIngredientsStr := r.URL.Query().Get("have_ingredients")
 	haveIngredientIDs := make(map[int]struct{})
 	if haveIngredientsStr != "" {
@@ -1396,7 +1408,6 @@ func shoppingListHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		// 所有していない食材のみをリストに追加
 		if _, ok := haveIngredientIDs[ingredient.IngredientID]; !ok {
 			shoppingList = append(shoppingList, ingredient)
 		}
@@ -1414,9 +1425,7 @@ func shoppingListHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// /api/recipes/{id} レシピ詳細＋使用食材取得
 func recipeDetailHandler(w http.ResponseWriter, r *http.Request) {
-	// URLからIDを取得
 	idStr := r.URL.Path[len("/api/recipes/"):]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -1424,7 +1433,6 @@ func recipeDetailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// レシピ情報を取得
 	var recipe Recipe
 	err = db.QueryRow(`
 		SELECT id, name, category, prep_time_minutes, cook_time_minutes, servings, difficulty, instructions, description 
@@ -1439,7 +1447,6 @@ func recipeDetailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 使用食材を取得
 	rows, err := db.Query(`
 		SELECT i.id, i.name, ri.quantity, ri.unit, ri.notes
 		FROM recipe_ingredients ri
@@ -1469,7 +1476,6 @@ func recipeDetailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// JSONレスポンス
 	w.Header().Set("Content-Type", "application/json")
 	resp := RecipeWithIngredients{Recipe: recipe, Ingredients: ingredients}
 	json.NewEncoder(w).Encode(resp)
@@ -1480,9 +1486,20 @@ func main() {
 	populateTestData()
 	defer db.Close()
 
-	fmt.Printf("ポート8000でAPIサーバーを起動\n")
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "your-super-secret-jwt-key-change-in-production"
+		log.Println("Warning: Using default JWT secret")
+	}
 
-	http.HandleFunc("/api/hello", loggingMiddleware(enableCORS(helloHandler)))
+	authService := auth.NewAuthService(db, jwtSecret)
+	authHandler := auth.NewAuthHandler(authService)
+
+	fmt.Println("Server running on port 8000")
+
+	http.HandleFunc("/api/auth/register", loggingMiddleware(enableCORS(authHandler.RegisterHandler)))
+	http.HandleFunc("/api/auth/login", loggingMiddleware(enableCORS(authHandler.LoginHandler)))
+
 	http.HandleFunc("/api/ingredients", loggingMiddleware(enableCORS(ingredientsHandler)))
 	http.HandleFunc("/api/ingredients/", loggingMiddleware(enableCORS(ingredientDetailsHandler)))
 	http.HandleFunc("/api/recipes", loggingMiddleware(enableCORS(recipesHandler)))

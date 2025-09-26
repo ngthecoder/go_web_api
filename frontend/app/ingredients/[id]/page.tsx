@@ -39,7 +39,7 @@ export default function IngredientDetailPage() {
       fetch(`http://localhost:8000/api/ingredients/${params.id}`)
         .then(res => {
           if (!res.ok) {
-            throw new Error(`食材が見つかりません (${res.status})`);
+            throw new Error(`Ingredient not found (${res.status})`);
           }
           return res.json();
         })
@@ -58,20 +58,21 @@ export default function IngredientDetailPage() {
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      '野菜': 'bg-green-100 text-green-800',
-      '穀物': 'bg-yellow-100 text-yellow-800',
-      'タンパク質': 'bg-red-100 text-red-800',
-      '乳製品': 'bg-blue-100 text-blue-800',
-      '調味料': 'bg-purple-100 text-purple-800',
-      '果物': 'bg-pink-100 text-pink-800',
-      'その他': 'bg-gray-100 text-gray-800',
+      'Vegetables': 'bg-green-100 text-green-800',
+      'Grains': 'bg-yellow-100 text-yellow-800',
+      'Protein': 'bg-red-100 text-red-800',
+      'Dairy': 'bg-blue-100 text-blue-800',
+      'Seasonings': 'bg-purple-100 text-purple-800',
+      'Fruits': 'bg-pink-100 text-pink-800',
+      'Herbs & Spices': 'bg-indigo-100 text-indigo-800',
+      'Pantry': 'bg-orange-100 text-orange-800',
     };
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
 
   if (loading) return <div className="container mx-auto p-4">Loading...</div>;
-  if (error) return <div className="container mx-auto p-4 text-red-600">エラー: {error}</div>;
-  if (!ingredientDetail) return <div className="container mx-auto p-4">食材が見つかりません</div>;
+  if (error) return <div className="container mx-auto p-4 text-red-600">Error: {error}</div>;
+  if (!ingredientDetail) return <div className="container mx-auto p-4">Ingredient not found</div>;
 
   const ingredient = ingredientDetail['ingredient'];
   const recipes = ingredientDetail['recipes']
@@ -79,9 +80,9 @@ export default function IngredientDetailPage() {
   return (
     <div className="container mx-auto p-4">
       <nav className="mb-6 text-sm text-gray-600">
-        <Link href="/" className="hover:text-blue-600">ホーム</Link>
+        <Link href="/" className="hover:text-blue-600">Home</Link>
         <span className="mx-2">→</span>
-        <Link href="/ingredients" className="hover:text-blue-600">食材一覧</Link>
+        <Link href="/ingredients" className="hover:text-blue-600">Ingredients</Link>
         <span className="mx-2">→</span>
         <span className="text-gray-900">{ingredient.name}</span>
       </nav>
@@ -96,21 +97,21 @@ export default function IngredientDetailPage() {
 
         <div className="grid md:grid-cols-2 gap-6">
           <div>
-            <h2 className="text-xl font-semibold mb-3">食材情報</h2>
+            <h2 className="text-xl font-semibold mb-3">Ingredient Information</h2>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-600">カテゴリ:</span>
+                <span className="text-gray-600">Category:</span>
                 <span className="font-medium">{ingredient.category}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">カロリー:</span>
+                <span className="text-gray-600">Calories:</span>
                 <span className="font-medium">{ingredient.calories_per_100g} kcal/100g</span>
               </div>
             </div>
           </div>
 
           <div>
-            <h2 className="text-xl font-semibold mb-3">説明</h2>
+            <h2 className="text-xl font-semibold mb-3">Description</h2>
             <p className="text-gray-700">{ingredient.description}</p>
           </div>
         </div>
@@ -118,12 +119,12 @@ export default function IngredientDetailPage() {
 
       <div>
         <h2 className="text-2xl font-semibold mb-6">
-          この食材を使用するレシピ ({recipes?.length}件)
+          Recipes Using This Ingredient ({recipes?.length} found)
         </h2>
 
         {!recipes || recipes?.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            この食材を使用するレシピが見つかりませんでした
+            No recipes found using this ingredient
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -134,9 +135,9 @@ export default function IngredientDetailPage() {
                   <p className="text-gray-600 text-sm mb-3 line-clamp-2">{recipe.description}</p>
                   
                   <div className="space-y-1 text-sm text-gray-600 mb-3">
-                    <p>カテゴリ: {recipe.category}</p>
-                    <p>準備: {recipe.prep_time_minutes}分 | 調理: {recipe.cook_time_minutes}分</p>
-                    <p>{recipe.servings}人分</p>
+                    <p>Category: {recipe.category}</p>
+                    <p>Prep: {recipe.prep_time_minutes}min | Cook: {recipe.cook_time_minutes}min</p>
+                    <p>Serves {recipe.servings}</p>
                   </div>
 
                   <div className="flex justify-between items-center">
@@ -145,11 +146,10 @@ export default function IngredientDetailPage() {
                       recipe.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-red-100 text-red-800'
                     }`}>
-                      {recipe.difficulty === 'easy' ? '簡単' : 
-                       recipe.difficulty === 'medium' ? '普通' : '難しい'}
+                      {recipe.difficulty}
                     </span>
                     <span className="text-xs text-gray-500">
-                      合計{recipe.prep_time_minutes + recipe.cook_time_minutes}分
+                      Total {recipe.prep_time_minutes + recipe.cook_time_minutes}min
                     </span>
                   </div>
                 </div>
@@ -164,7 +164,7 @@ export default function IngredientDetailPage() {
           href="/ingredients" 
           className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
-          食材一覧に戻る
+          Back to Ingredients
         </Link>
       </div>
     </div>

@@ -71,14 +71,14 @@ export default function FindRecipesPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">手持ち食材からレシピ検索</h1>
+      <h1 className="text-3xl font-bold mb-6">Find Recipes by Ingredients</h1>
       
       <div className="grid lg:grid-cols-2 gap-8">
         <div>
-          <h2 className="text-2xl font-semibold mb-4">食材を選択</h2>
+          <h2 className="text-2xl font-semibold mb-4">Select Ingredients</h2>
           <input
             type="text"
-            placeholder="食材を検索..."
+            placeholder="Search ingredients..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg mb-4"
@@ -86,7 +86,7 @@ export default function FindRecipesPage() {
 
           {selectedIngredients.length > 0 && (
             <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-semibold mb-2">選択した食材 ({selectedIngredients.length}個):</h3>
+              <h3 className="font-semibold mb-2">Selected Ingredients ({selectedIngredients.length} items):</h3>
               <div className="flex flex-wrap gap-2">
                 {getSelectedIngredientNames().map((name, index) => (
                   <span key={index} className="px-2 py-1 bg-blue-200 rounded text-sm">
@@ -99,7 +99,7 @@ export default function FindRecipesPage() {
                 disabled={loading}
                 className="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading ? 'レシピを検索中...' : 'レシピを検索'}
+                {loading ? 'Searching Recipes...' : 'Find Recipes'}
               </button>
             </div>
           )}
@@ -131,19 +131,19 @@ export default function FindRecipesPage() {
         
         <div>
           <h2 className="text-2xl font-semibold mb-4">
-            マッチしたレシピ 
-            {matchedRecipes.length > 0 && `(${matchedRecipes.length}件)`}
+            Matched Recipes 
+            {matchedRecipes.length > 0 && `(${matchedRecipes.length} found)`}
           </h2>
 
           {matchedRecipes.length === 0 && !loading && selectedIngredients.length > 0 && (
             <div className="text-center py-8 text-gray-500">
-              選択した食材でレシピが見つかりませんでした
+              No recipes found with selected ingredients
             </div>
           )}
 
           {matchedRecipes.length === 0 && selectedIngredients.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              食材を選択してレシピを検索してください
+              Select ingredients to search for recipes
             </div>
           )}
 
@@ -155,17 +155,17 @@ export default function FindRecipesPage() {
                     <h3 className="text-xl font-semibold">{recipe.name}</h3>
                     <div className="text-right">
                       <div className="text-sm font-medium text-green-600">
-                        マッチ度: {Math.round(recipe.match_score * 100)}%
+                        Match: {Math.round(recipe.match_score * 100)}%
                       </div>
                       <div className="text-xs text-gray-500">
-                        {recipe.matched_ingredients_count}/{recipe.total_ingredients_count} 材料
+                        {recipe.matched_ingredients_count}/{recipe.total_ingredients_count} ingredients
                       </div>
                     </div>
                   </div>
                   
                   <div className="flex justify-between items-center text-sm text-gray-600">
                     <span>{recipe.category}</span>
-                    <span>{recipe.prep_time_minutes + recipe.cook_time_minutes}分</span>
+                    <span>{recipe.prep_time_minutes + recipe.cook_time_minutes} min</span>
                     <span className={`px-2 py-1 rounded ${
                       recipe.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
                       recipe.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :

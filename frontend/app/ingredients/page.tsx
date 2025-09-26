@@ -68,26 +68,27 @@ export default function IngredientsPage() {
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      '野菜': 'bg-green-100 text-green-800',
-      '穀物': 'bg-yellow-100 text-yellow-800',
-      'タンパク質': 'bg-red-100 text-red-800',
-      '乳製品': 'bg-blue-100 text-blue-800',
-      '調味料': 'bg-purple-100 text-purple-800',
-      '果物': 'bg-pink-100 text-pink-800',
-      'その他': 'bg-gray-100 text-gray-800',
+      'Vegetables': 'bg-green-100 text-green-800',
+      'Grains': 'bg-yellow-100 text-yellow-800',
+      'Protein': 'bg-red-100 text-red-800',
+      'Dairy': 'bg-blue-100 text-blue-800',
+      'Seasonings': 'bg-purple-100 text-purple-800',
+      'Fruits': 'bg-pink-100 text-pink-800',
+      'Herbs & Spices': 'bg-indigo-100 text-indigo-800',
+      'Pantry': 'bg-orange-100 text-orange-800',
     };
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">食材一覧</h1>
+      <h1 className="text-3xl font-bold mb-6">Ingredients</h1>
 
       <div className="mb-6 space-y-4 bg-gray-50 p-6 rounded-lg">
         <div>
           <input
             type="text"
-            placeholder="食材を検索..."
+            placeholder="Search ingredients..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg"
@@ -101,14 +102,15 @@ export default function IngredientsPage() {
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="px-4 py-2 border rounded-lg"
           >
-            <option value="">すべてのカテゴリ</option>
-            <option value="野菜">野菜</option>
-            <option value="穀物">穀物</option>
-            <option value="タンパク質">タンパク質</option>
-            <option value="乳製品">乳製品</option>
-            <option value="調味料">調味料</option>
-            <option value="果物">果物</option>
-            <option value="その他">その他</option>
+            <option value="">All Categories</option>
+            <option value="Vegetables">Vegetables</option>
+            <option value="Grains">Grains</option>
+            <option value="Protein">Protein</option>
+            <option value="Dairy">Dairy</option>
+            <option value="Seasonings">Seasonings</option>
+            <option value="Fruits">Fruits</option>
+            <option value="Herbs & Spices">Herbs & Spices</option>
+            <option value="Pantry">Pantry</option>
           </select>
 
           <select
@@ -117,8 +119,8 @@ export default function IngredientsPage() {
             onChange={(e) => setSortBy(e.target.value)}
             className="px-4 py-2 border rounded-lg"
           >
-            <option value="name">名前順</option>
-            <option value="calories">カロリー順</option>
+            <option value="name">Sort by Name</option>
+            <option value="calories">Sort by Calories</option>
           </select>
 
           <select
@@ -127,8 +129,8 @@ export default function IngredientsPage() {
             onChange={(e) => setSortOrder(e.target.value)}
             className="px-4 py-2 border rounded-lg"
           >
-            <option value="asc">昇順</option>
-            <option value="desc">降順</option>
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
           </select>
 
           <select
@@ -140,15 +142,15 @@ export default function IngredientsPage() {
             }}
             className="px-4 py-2 border rounded-lg"
           >
-            <option value="20">20件表示</option>
-            <option value="40">40件表示</option>
-            <option value="60">60件表示</option>
-            <option value="100">100件表示</option>
+            <option value="20">Show 20</option>
+            <option value="40">Show 40</option>
+            <option value="60">Show 60</option>
+            <option value="100">Show 100</option>
           </select>
         </div>
 
         <div className="text-sm text-gray-600">
-          {ingredientData.total}件中 {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, ingredientData.total)}件を表示
+          Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, ingredientData.total)} of {ingredientData.total} items
         </div>
       </div>
 
@@ -184,7 +186,7 @@ export default function IngredientsPage() {
                 disabled={currentPage === 1}
                 className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
-                前のページ
+                Previous
               </button>
               
               <div className="flex space-x-1">
@@ -213,7 +215,7 @@ export default function IngredientsPage() {
                 disabled={!ingredientData.has_next}
                 className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
-                次のページ
+                Next
               </button>
             </div>
           )}

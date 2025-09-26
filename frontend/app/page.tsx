@@ -70,13 +70,13 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">レシピ一覧</h1>
+      <h1 className="text-3xl font-bold mb-6">Recipes</h1>
 
       <div className="mb-6 space-y-4 bg-gray-50 p-6 rounded-lg">
         <div>
           <input
             type="text"
-            placeholder="レシピを検索..."
+            placeholder="Search recipes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg"
@@ -90,12 +90,12 @@ export default function HomePage() {
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="px-4 py-2 border rounded-lg"
           >
-            <option value="">すべてのカテゴリ</option>
-            <option value="朝食">朝食</option>
-            <option value="昼食">昼食</option>
-            <option value="夕食">夕食</option>
-            <option value="副菜">副菜</option>
-            <option value="おやつ">おやつ</option>
+            <option value="">All Categories</option>
+            <option value="Breakfast">Breakfast</option>
+            <option value="Lunch">Lunch</option>
+            <option value="Dinner">Dinner</option>
+            <option value="Side">Side</option>
+            <option value="Snack">Snack</option>
           </select>
 
           <select
@@ -104,15 +104,15 @@ export default function HomePage() {
             onChange={(e) => setSelectedDifficulty(e.target.value)}
             className="px-4 py-2 border rounded-lg"
           >
-            <option value="">すべての難易度</option>
-            <option value="easy">簡単</option>
-            <option value="medium">普通</option>
-            <option value="hard">難しい</option>
+            <option value="">All Difficulties</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
           </select>
 
           <input
             type="number"
-            placeholder="最大調理時間(分)"
+            placeholder="Max time (minutes)"
             value={maxTime}
             onChange={(e) => setMaxTime(e.target.value)}
             className="px-4 py-2 border rounded-lg"
@@ -128,10 +128,10 @@ export default function HomePage() {
             }}
             className="px-4 py-2 border rounded-lg"
           >
-            <option value="6">6件表示</option>
-            <option value="12">12件表示</option>
-            <option value="24">24件表示</option>
-            <option value="50">50件表示</option>
+            <option value="6">Show 6</option>
+            <option value="12">Show 12</option>
+            <option value="24">Show 24</option>
+            <option value="50">Show 50</option>
           </select>
         </div>
 
@@ -142,12 +142,12 @@ export default function HomePage() {
             onChange={(e) => setSortBy(e.target.value)}
             className="px-4 py-2 border rounded-lg"
           >
-            <option value="name">名前順</option>
-            <option value="prep_time">準備時間順</option>
-            <option value="cook_time">調理時間順</option>
-            <option value="total_time">合計時間順</option>
-            <option value="servings">人数順</option>
-            <option value="difficulty">難易度順</option>
+            <option value="name">Sort by Name</option>
+            <option value="prep_time">Sort by Prep Time</option>
+            <option value="cook_time">Sort by Cook Time</option>
+            <option value="total_time">Sort by Total Time</option>
+            <option value="servings">Sort by Servings</option>
+            <option value="difficulty">Sort by Difficulty</option>
           </select>
 
           <select
@@ -156,13 +156,13 @@ export default function HomePage() {
             onChange={(e) => setSortOrder(e.target.value)}
             className="px-4 py-2 border rounded-lg"
           >
-            <option value="asc">昇順</option>
-            <option value="desc">降順</option>
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
           </select>
         </div>
 
         <div className="text-sm text-gray-600">
-          {recipeData.total}件中 {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, recipeData.total)}件を表示
+          Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, recipeData.total)} of {recipeData.total} items
         </div>
       </div>
 
@@ -177,9 +177,9 @@ export default function HomePage() {
                   <h3 className="text-xl font-semibold mb-2">{recipe.name}</h3>
                   <p className="text-gray-600 mb-2 text-sm line-clamp-2">{recipe.description}</p>
                   <div className="space-y-1 text-sm text-gray-600">
-                    <p>カテゴリ: {recipe.category}</p>
-                    <p>準備: {recipe.prep_time_minutes}分 | 調理: {recipe.cook_time_minutes}分</p>
-                    <p>{recipe.servings}人分</p>
+                    <p>Category: {recipe.category}</p>
+                    <p>Prep: {recipe.prep_time_minutes}min | Cook: {recipe.cook_time_minutes}min</p>
+                    <p>Serves {recipe.servings}</p>
                   </div>
                   <div className="mt-3 flex justify-between items-center">
                     <span className={`inline-block px-2 py-1 rounded text-sm ${
@@ -187,11 +187,10 @@ export default function HomePage() {
                       recipe.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-red-100 text-red-800'
                     }`}>
-                      {recipe.difficulty === 'easy' ? '簡単' : 
-                       recipe.difficulty === 'medium' ? '普通' : '難しい'}
+                      {recipe.difficulty}
                     </span>
                     <span className="text-sm text-gray-500">
-                      合計{recipe.prep_time_minutes + recipe.cook_time_minutes}分
+                      Total {recipe.prep_time_minutes + recipe.cook_time_minutes}min
                     </span>
                   </div>
                 </div>
@@ -206,7 +205,7 @@ export default function HomePage() {
                 disabled={currentPage === 1}
                 className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
-                前のページ
+                Previous
               </button>
               
               <div className="flex space-x-1">
@@ -235,7 +234,7 @@ export default function HomePage() {
                 disabled={!recipeData.has_next}
                 className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
-                次のページ
+                Next
               </button>
             </div>
           )}

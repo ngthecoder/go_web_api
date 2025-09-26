@@ -192,117 +192,153 @@ func populateTestData() {
 	db.Exec("DELETE FROM recipes")
 	db.Exec("DELETE FROM ingredients")
 
+	// Comprehensive English ingredients data
 	ingredientsData := []struct {
 		name        string
 		category    string
 		calories    int
 		description string
 	}{
-		{"トマト", "野菜", 18, "新鮮な赤いトマト"},
-		{"玉ねぎ", "野菜", 37, "甘味のある玉ねぎ"},
-		{"ニンニク", "野菜", 134, "香り豊かなニンニク"},
-		{"ナス", "野菜", 22, "紫色の美味しいナス"},
-		{"ジャガイモ", "野菜", 77, "ホクホクのジャガイモ"},
-		{"人参", "野菜", 39, "オレンジ色の甘い人参"},
-		{"レタス", "野菜", 12, "新鮮なレタス"},
-		{"キュウリ", "野菜", 14, "みずみずしいキュウリ"},
-		{"ピーマン", "野菜", 22, "緑のピーマン"},
-		{"もやし", "野菜", 14, "シャキシャキもやし"},
-		{"キャベツ", "野菜", 23, "甘いキャベツ"},
-		{"ブロッコリー", "野菜", 33, "栄養豊富なブロッコリー"},
-		{"ほうれん草", "野菜", 20, "鉄分豊富なほうれん草"},
-		{"白菜", "野菜", 14, "みずみずしい白菜"},
-		{"大根", "野菜", 18, "辛味のある大根"},
-		{"かぼちゃ", "野菜", 49, "甘いかぼちゃ"},
-		{"きのこ", "野菜", 22, "うまみたっぷりしいたけ"},
-		{"えのき", "野菜", 22, "食感の良いえのき"},
-		{"しめじ", "野菜", 18, "香り豊かなしめじ"},
-		{"アスパラガス", "野菜", 22, "春の味覚アスパラガス"},
-		{"セロリ", "野菜", 15, "シャキシャキセロリ"},
-		{"生姜", "野菜", 30, "辛みのある生姜"},
-		{"長ねぎ", "野菜", 28, "薬味に最適な長ねぎ"},
-		{"小松菜", "野菜", 14, "カルシウム豊富な小松菜"},
-		{"水菜", "野菜", 23, "シャキシャキ水菜"},
+		// Vegetables
+		{"Tomato", "Vegetables", 18, "Fresh red tomatoes"},
+		{"Onion", "Vegetables", 40, "Sweet yellow onions"},
+		{"Garlic", "Vegetables", 149, "Fresh garlic cloves"},
+		{"Bell Pepper", "Vegetables", 31, "Colorful bell peppers"},
+		{"Carrot", "Vegetables", 41, "Orange carrots"},
+		{"Celery", "Vegetables", 16, "Crisp celery stalks"},
+		{"Potato", "Vegetables", 77, "Russet potatoes"},
+		{"Sweet Potato", "Vegetables", 86, "Orange sweet potatoes"},
+		{"Broccoli", "Vegetables", 34, "Fresh broccoli florets"},
+		{"Spinach", "Vegetables", 23, "Fresh spinach leaves"},
+		{"Lettuce", "Vegetables", 15, "Crisp romaine lettuce"},
+		{"Cucumber", "Vegetables", 16, "Fresh cucumbers"},
+		{"Zucchini", "Vegetables", 17, "Green zucchini"},
+		{"Mushrooms", "Vegetables", 22, "Button mushrooms"},
+		{"Asparagus", "Vegetables", 20, "Fresh asparagus spears"},
+		{"Green Beans", "Vegetables", 31, "Fresh green beans"},
+		{"Corn", "Vegetables", 86, "Sweet corn kernels"},
+		{"Peas", "Vegetables", 81, "Green peas"},
+		{"Cabbage", "Vegetables", 25, "Fresh green cabbage"},
+		{"Cauliflower", "Vegetables", 25, "White cauliflower"},
+		{"Brussels Sprouts", "Vegetables", 43, "Fresh Brussels sprouts"},
+		{"Kale", "Vegetables", 35, "Nutritious kale leaves"},
+		{"Eggplant", "Vegetables", 25, "Purple eggplant"},
+		{"Red Onion", "Vegetables", 40, "Purple red onions"},
+		{"Leek", "Vegetables", 61, "Fresh leeks"},
 
-		{"米", "穀物", 358, "日本のお米"},
-		{"パスタ", "穀物", 371, "イタリアンパスタ"},
-		{"パン", "穀物", 264, "食パン"},
-		{"うどん", "穀物", 270, "讃岐うどん"},
-		{"そば", "穀物", 274, "日本そば"},
-		{"ラーメン", "穀物", 281, "中華麺"},
-		{"オートミール", "穀物", 380, "健康的なオートミール"},
-		{"小麦粉", "穀物", 368, "薄力粉"},
-		{"パン粉", "穀物", 373, "サクサクパン粉"},
+		// Proteins
+		{"Chicken Breast", "Protein", 165, "Boneless chicken breast"},
+		{"Chicken Thighs", "Protein", 209, "Juicy chicken thighs"},
+		{"Ground Beef", "Protein", 254, "Lean ground beef"},
+		{"Beef Steak", "Protein", 271, "Premium beef steak"},
+		{"Pork Chops", "Protein", 231, "Tender pork chops"},
+		{"Ground Pork", "Protein", 297, "Fresh ground pork"},
+		{"Salmon", "Protein", 208, "Atlantic salmon fillet"},
+		{"Tuna", "Protein", 144, "Fresh tuna steak"},
+		{"Shrimp", "Protein", 99, "Large shrimp"},
+		{"Cod", "Protein", 82, "White cod fillet"},
+		{"Eggs", "Protein", 155, "Large chicken eggs"},
+		{"Tofu", "Protein", 76, "Firm tofu"},
+		{"Black Beans", "Protein", 132, "Canned black beans"},
+		{"Chickpeas", "Protein", 164, "Canned chickpeas"},
+		{"Lentils", "Protein", 116, "Red lentils"},
+		{"Turkey", "Protein", 189, "Ground turkey"},
+		{"Bacon", "Protein", 541, "Crispy bacon strips"},
+		{"Ham", "Protein", 145, "Sliced ham"},
+		{"Sausage", "Protein", 301, "Italian sausage"},
 
-		{"鶏肉", "タンパク質", 200, "新鮮な鶏胸肉"},
-		{"豚肉", "タンパク質", 263, "柔らかい豚ロース"},
-		{"牛肉", "タンパク質", 250, "上質な牛肉"},
-		{"卵", "タンパク質", 151, "新鮮な鶏卵"},
-		{"鮭", "タンパク質", 139, "脂の乗った鮭"},
-		{"マグロ", "タンパク質", 125, "赤身のマグロ"},
-		{"エビ", "タンパク質", 83, "プリプリエビ"},
-		{"イカ", "タンパク質", 83, "新鮮なイカ"},
-		{"豆腐", "タンパク質", 56, "絹ごし豆腐"},
-		{"納豆", "タンパク質", 200, "栄養豊富な納豆"},
-		{"ひき肉", "タンパク質", 224, "合いびき肉"},
-		{"ソーセージ", "タンパク質", 321, "ジューシーソーセージ"},
-		{"ハム", "タンパク質", 196, "スモークハム"},
-		{"ベーコン", "タンパク質", 405, "カリカリベーコン"},
-		{"鶏もも肉", "タンパク質", 253, "ジューシーな鶏もも肉"},
+		// Grains & Starches
+		{"Rice", "Grains", 130, "Long grain white rice"},
+		{"Brown Rice", "Grains", 123, "Whole grain brown rice"},
+		{"Pasta", "Grains", 131, "Dried pasta"},
+		{"Bread", "Grains", 265, "Whole wheat bread"},
+		{"Quinoa", "Grains", 120, "Cooked quinoa"},
+		{"Oats", "Grains", 68, "Rolled oats"},
+		{"Flour", "Grains", 364, "All-purpose flour"},
+		{"Couscous", "Grains", 112, "Pearl couscous"},
+		{"Barley", "Grains", 123, "Pearl barley"},
+		{"Noodles", "Grains", 138, "Egg noodles"},
 
-		{"牛乳", "乳製品", 67, "新鮮な牛乳"},
-		{"チーズ", "乳製品", 113, "濃厚なチーズ"},
-		{"バター", "乳製品", 745, "無塩バター"},
-		{"ヨーグルト", "乳製品", 62, "プレーンヨーグルト"},
-		{"生クリーム", "乳製品", 433, "濃厚な生クリーム"},
-		{"クリームチーズ", "乳製品", 346, "なめらかクリームチーズ"},
-		{"モッツァレラ", "乳製品", 280, "イタリアンモッツァレラ"},
+		// Dairy
+		{"Milk", "Dairy", 61, "Whole milk"},
+		{"Cheese", "Dairy", 113, "Cheddar cheese"},
+		{"Mozzarella", "Dairy", 280, "Fresh mozzarella"},
+		{"Parmesan", "Dairy", 110, "Grated parmesan"},
+		{"Greek Yogurt", "Dairy", 97, "Plain Greek yogurt"},
+		{"Butter", "Dairy", 717, "Unsalted butter"},
+		{"Heavy Cream", "Dairy", 340, "Heavy whipping cream"},
+		{"Cream Cheese", "Dairy", 342, "Philadelphia cream cheese"},
+		{"Sour Cream", "Dairy", 193, "Regular sour cream"},
 
-		{"オリーブオイル", "調味料", 884, "エクストラバージンオリーブオイル"},
-		{"醤油", "調味料", 71, "日本の醤油"},
-		{"塩", "調味料", 0, "海塩"},
-		{"砂糖", "調味料", 387, "白砂糖"},
-		{"カレールー", "調味料", 512, "カレーのルー"},
-		{"みそ", "調味料", 217, "赤味噌"},
-		{"みりん", "調味料", 241, "本みりん"},
-		{"酢", "調味料", 25, "米酢"},
-		{"料理酒", "調味料", 103, "日本酒"},
-		{"ごま油", "調味料", 921, "香ばしいごま油"},
-		{"マヨネーズ", "調味料", 703, "まろやかマヨネーズ"},
-		{"ケチャップ", "調味料", 119, "トマトケチャップ"},
-		{"ウスターソース", "調味料", 117, "濃厚ウスターソース"},
-		{"コショウ", "調味料", 251, "黒胡椒"},
-		{"唐辛子", "調味料", 419, "一味唐辛子"},
-		{"わさび", "調味料", 265, "本わさび"},
-		{"からし", "調味料", 336, "和からし"},
-		{"バジル", "調味料", 22, "フレッシュバジル"},
-		{"パセリ", "調味料", 43, "イタリアンパセリ"},
-		{"ローリエ", "調味料", 313, "月桂樹の葉"},
+		// Seasonings & Condiments
+		{"Salt", "Seasonings", 0, "Table salt"},
+		{"Black Pepper", "Seasonings", 251, "Ground black pepper"},
+		{"Olive Oil", "Seasonings", 884, "Extra virgin olive oil"},
+		{"Vegetable Oil", "Seasonings", 884, "Neutral cooking oil"},
+		{"Soy Sauce", "Seasonings", 8, "Low sodium soy sauce"},
+		{"Vinegar", "Seasonings", 18, "White vinegar"},
+		{"Lemon Juice", "Seasonings", 22, "Fresh lemon juice"},
+		{"Lime Juice", "Seasonings", 25, "Fresh lime juice"},
+		{"Honey", "Seasonings", 304, "Pure honey"},
+		{"Maple Syrup", "Seasonings", 260, "Pure maple syrup"},
+		{"Ketchup", "Seasonings", 112, "Tomato ketchup"},
+		{"Mustard", "Seasonings", 66, "Dijon mustard"},
+		{"Mayonnaise", "Seasonings", 680, "Regular mayonnaise"},
+		{"Hot Sauce", "Seasonings", 12, "Tabasco sauce"},
 
-		{"りんご", "果物", 54, "甘酸っぱいりんご"},
-		{"バナナ", "果物", 86, "栄養豊富なバナナ"},
-		{"レモン", "果物", 54, "酸っぱいレモン"},
-		{"オレンジ", "果物", 39, "ビタミンC豊富なオレンジ"},
-		{"いちご", "果物", 34, "甘いいちご"},
-		{"ブルーベリー", "果物", 49, "抗酸化作用のあるブルーベリー"},
-		{"アボカド", "果物", 187, "濃厚なアボカド"},
+		// Herbs & Spices
+		{"Basil", "Herbs & Spices", 22, "Fresh basil leaves"},
+		{"Oregano", "Herbs & Spices", 265, "Dried oregano"},
+		{"Thyme", "Herbs & Spices", 101, "Fresh thyme"},
+		{"Rosemary", "Herbs & Spices", 131, "Fresh rosemary"},
+		{"Parsley", "Herbs & Spices", 36, "Fresh parsley"},
+		{"Cilantro", "Herbs & Spices", 23, "Fresh cilantro"},
+		{"Paprika", "Herbs & Spices", 282, "Sweet paprika"},
+		{"Cumin", "Herbs & Spices", 375, "Ground cumin"},
+		{"Chili Powder", "Herbs & Spices", 282, "Chili powder blend"},
+		{"Garlic Powder", "Herbs & Spices", 331, "Granulated garlic"},
+		{"Onion Powder", "Herbs & Spices", 341, "Granulated onion"},
+		{"Red Pepper Flakes", "Herbs & Spices", 318, "Crushed red pepper"},
+		{"Bay Leaves", "Herbs & Spices", 313, "Dried bay leaves"},
+		{"Cinnamon", "Herbs & Spices", 247, "Ground cinnamon"},
+		{"Ginger", "Herbs & Spices", 80, "Fresh ginger root"},
 
-		{"はちみつ", "その他", 294, "天然はちみつ"},
-		{"のり", "その他", 188, "海苔"},
-		{"ごま", "その他", 578, "白ごま"},
-		{"片栗粉", "その他", 330, "とろみ付け用"},
-		{"コンソメ", "その他", 235, "洋風だしの素"},
-		{"だしの素", "その他", 276, "和風だしの素"},
+		// Fruits
+		{"Lemon", "Fruits", 29, "Fresh lemons"},
+		{"Lime", "Fruits", 30, "Fresh limes"},
+		{"Apple", "Fruits", 52, "Red apples"},
+		{"Banana", "Fruits", 89, "Ripe bananas"},
+		{"Orange", "Fruits", 47, "Navel oranges"},
+		{"Strawberry", "Fruits", 32, "Fresh strawberries"},
+		{"Blueberry", "Fruits", 57, "Fresh blueberries"},
+		{"Avocado", "Fruits", 160, "Ripe avocados"},
+		{"Pineapple", "Fruits", 50, "Fresh pineapple"},
+		{"Mango", "Fruits", 60, "Ripe mango"},
+
+		// Pantry Staples
+		{"Chicken Stock", "Pantry", 12, "Low sodium chicken stock"},
+		{"Vegetable Stock", "Pantry", 12, "Vegetable broth"},
+		{"Canned Tomatoes", "Pantry", 18, "Crushed tomatoes"},
+		{"Tomato Paste", "Pantry", 82, "Double concentrated tomato paste"},
+		{"Coconut Milk", "Pantry", 230, "Canned coconut milk"},
+		{"Baking Powder", "Pantry", 53, "Double acting baking powder"},
+		{"Baking Soda", "Pantry", 0, "Sodium bicarbonate"},
+		{"Vanilla Extract", "Pantry", 288, "Pure vanilla extract"},
+		{"Sugar", "Pantry", 387, "Granulated white sugar"},
+		{"Brown Sugar", "Pantry", 380, "Packed brown sugar"},
+		{"Cornstarch", "Pantry", 381, "Corn starch for thickening"},
+		{"Breadcrumbs", "Pantry", 395, "Plain breadcrumbs"},
 	}
 
 	for _, ing := range ingredientsData {
 		_, err := db.Exec("INSERT INTO ingredients (name, category, calories_per_100g, description) VALUES (?, ?, ?, ?)",
 			ing.name, ing.category, ing.calories, ing.description)
 		if err != nil {
-			log.Printf("%sをingredientsテーブルへデータ追加中のエラー: %v", ing.name, err)
+			log.Printf("Error adding %s to ingredients table: %v", ing.name, err)
 		}
 	}
 
+	// Comprehensive English recipes data
 	recipesData := []struct {
 		name         string
 		category     string
@@ -313,143 +349,137 @@ func populateTestData() {
 		instructions string
 		description  string
 	}{
+		// Breakfast
 		{
-			"フレンチトースト", "朝食", 5, 10, 2, "easy",
-			"1. 卵と牛乳を混ぜる\n2. パンを浸す\n3. フライパンで焼く\n4. はちみつをかけて完成",
-			"甘くて美味しい朝食",
+			"Scrambled Eggs", "Breakfast", 5, 5, 2, "easy",
+			"1. Crack eggs into a bowl and whisk\n2. Heat butter in non-stick pan\n3. Pour in eggs and stir gently\n4. Season with salt and pepper\n5. Serve immediately",
+			"Fluffy and creamy scrambled eggs",
 		},
 		{
-			"スクランブルエッグ", "朝食", 3, 5, 1, "easy",
-			"1. 卵を溶く\n2. バターでゆっくり炒める\n3. 塩コショウで味付け",
-			"ふわふわのスクランブルエッグ",
+			"Pancakes", "Breakfast", 10, 15, 4, "medium",
+			"1. Mix flour, sugar, baking powder, and salt\n2. Combine milk, eggs, and melted butter\n3. Fold wet ingredients into dry\n4. Cook on griddle until bubbles form\n5. Flip and cook until golden",
+			"Classic fluffy pancakes",
 		},
 		{
-			"オートミール", "朝食", 2, 5, 1, "easy",
-			"1. オートミールに牛乳を加える\n2. 電子レンジで加熱\n3. フルーツを添える",
-			"健康的な朝食オートミール",
+			"Oatmeal", "Breakfast", 2, 5, 1, "easy",
+			"1. Bring milk to a simmer\n2. Add oats and cook stirring occasionally\n3. Add honey and cinnamon\n4. Top with fresh fruit",
+			"Hearty breakfast oatmeal",
 		},
 		{
-			"パンケーキ", "朝食", 10, 15, 3, "medium",
-			"1. 小麦粉、卵、牛乳を混ぜる\n2. フライパンで焼く\n3. はちみつをかける",
-			"ふわふわパンケーキ",
-		},
-
-		{
-			"オムライス", "昼食", 15, 20, 2, "medium",
-			"1. 玉ねぎを炒める\n2. ご飯を加えてチャーハンを作る\n3. 卵を溶いて薄焼き卵を作る\n4. チャーハンを包む",
-			"みんな大好きオムライス",
+			"French Toast", "Breakfast", 10, 10, 4, "medium",
+			"1. Whisk eggs, milk, and vanilla\n2. Dip bread slices in mixture\n3. Cook in buttered pan until golden\n4. Serve with maple syrup",
+			"Classic French toast",
 		},
 		{
-			"カルボナーラ", "昼食", 10, 15, 2, "medium",
-			"1. パスタを茹でる\n2. ベーコンを炒める\n3. 卵とチーズを混ぜる\n4. 全て和える",
-			"濃厚なカルボナーラ",
-		},
-		{
-			"チャーハン", "昼食", 10, 15, 2, "easy",
-			"1. 卵でご飯を炒める\n2. 具材を加える\n3. 醤油で味付け",
-			"パラパラチャーハン",
-		},
-		{
-			"焼きそば", "昼食", 10, 10, 2, "easy",
-			"1. 麺を茹でる\n2. 野菜と炒める\n3. ソースで味付け",
-			"定番の焼きそば",
-		},
-		{
-			"サンドイッチ", "昼食", 10, 0, 1, "easy",
-			"1. パンにバターを塗る\n2. 具材を挟む\n3. 食べやすく切る",
-			"簡単サンドイッチ",
-		},
-		{
-			"親子丼", "昼食", 10, 15, 2, "medium",
-			"1. 鶏肉を煮る\n2. 卵を溶き入れる\n3. ご飯に乗せる",
-			"やさしい味の親子丼",
+			"Breakfast Burrito", "Breakfast", 15, 10, 2, "medium",
+			"1. Scramble eggs with cheese\n2. Cook bacon until crispy\n3. Sauté potatoes until golden\n4. Assemble in tortilla and roll\n5. Serve with salsa",
+			"Hearty breakfast burrito",
 		},
 
+		// Lunch
 		{
-			"トマトライス", "夕食", 10, 25, 4, "easy",
-			"1. 玉ねぎをみじん切りにする\n2. フライパンで油を熱し、玉ねぎを炒める\n3. トマトを角切りにして加える\n4. 米を加えて炒める\n5. 水を加えて煮る",
-			"シンプルで美味しいトマトライス",
+			"Caesar Salad", "Lunch", 15, 0, 4, "easy",
+			"1. Chop romaine lettuce\n2. Make dressing with lemon juice, garlic, and parmesan\n3. Toss lettuce with dressing\n4. Top with croutons and more parmesan",
+			"Classic Caesar salad",
 		},
 		{
-			"トマトパスタ", "夕食", 15, 20, 2, "easy",
-			"1. パスタを茹でる\n2. ニンニクをみじん切りにして炒める\n3. トマトを加えて煮込む\n4. 茹でたパスタと和える",
-			"基本のトマトパスタ",
+			"Grilled Chicken Sandwich", "Lunch", 10, 15, 2, "medium",
+			"1. Season chicken breast with salt and pepper\n2. Grill until cooked through\n3. Toast bread\n4. Assemble with lettuce, tomato, and mayo",
+			"Juicy grilled chicken sandwich",
 		},
 		{
-			"夏野菜カレー", "夕食", 20, 30, 4, "medium",
-			"1. 野菜をカットする\n2. 鍋で野菜を炒める\n3. 水を加えて煮込む\n4. カレールーを溶かし入れる\n5. さらに煮込んで完成",
-			"夏野菜たっぷりのヘルシーカレー",
+			"Vegetable Soup", "Lunch", 15, 30, 6, "easy",
+			"1. Sauté onions, carrots, and celery\n2. Add vegetable stock and bring to boil\n3. Add remaining vegetables\n4. Simmer until tender\n5. Season with herbs",
+			"Hearty vegetable soup",
 		},
 		{
-			"チキンカレー", "夕食", 15, 45, 4, "medium",
-			"1. 鶏肉をカットする\n2. 玉ねぎを炒める\n3. 鶏肉を加えて炒める\n4. 水を加えて煮込む\n5. カレールーを加える",
-			"本格的なチキンカレー",
+			"Pasta Salad", "Lunch", 20, 10, 8, "easy",
+			"1. Cook pasta according to package directions\n2. Cool completely\n3. Mix with vegetables and dressing\n4. Chill before serving",
+			"Fresh pasta salad",
 		},
 		{
-			"ハンバーグ", "夕食", 20, 25, 4, "medium",
-			"1. ひき肉と玉ねぎを混ぜる\n2. 成形する\n3. フライパンで焼く\n4. ソースを作る",
-			"ジューシーハンバーグ",
-		},
-		{
-			"生姜焼き", "夕食", 10, 15, 2, "easy",
-			"1. 豚肉を切る\n2. 生姜だれを作る\n3. 肉を焼いてたれを絡める",
-			"ご飯が進む生姜焼き",
-		},
-		{
-			"鮭の塩焼き", "夕食", 5, 15, 2, "easy",
-			"1. 鮭に塩を振る\n2. グリルで焼く\n3. レモンを添える",
-			"シンプルな鮭の塩焼き",
-		},
-		{
-			"麻婆豆腐", "夕食", 15, 20, 3, "medium",
-			"1. ひき肉を炒める\n2. 豆腐を加える\n3. 調味料で味付け\n4. 片栗粉でとろみをつける",
-			"辛くて美味しい麻婆豆腐",
-		},
-		{
-			"エビチリ", "夕食", 20, 15, 3, "hard",
-			"1. エビの下処理\n2. 衣をつけて揚げる\n3. チリソースを作る\n4. エビと和える",
-			"プリプリエビチリ",
-		},
-		{
-			"肉じゃが", "夕食", 15, 30, 4, "medium",
-			"1. 具材を切る\n2. 油で炒める\n3. だしと調味料で煮込む",
-			"家庭的な肉じゃが",
-		},
-		{
-			"すき焼き", "夕食", 20, 25, 4, "medium",
-			"1. 牛肉と野菜を準備\n2. 鍋で煮る\n3. 生卵につけて食べる",
-			"贅沢なすき焼き",
-		},
-		{
-			"天ぷら", "夕食", 25, 20, 4, "hard",
-			"1. 衣を作る\n2. 具材に衣をつける\n3. 油で揚げる",
-			"サクサク天ぷら",
+			"Chicken Quesadilla", "Lunch", 15, 10, 2, "medium",
+			"1. Cook chicken with spices\n2. Place chicken and cheese on tortilla\n3. Top with another tortilla\n4. Cook until golden and cheese melts\n5. Cut into wedges",
+			"Cheesy chicken quesadilla",
 		},
 
+		// Dinner
 		{
-			"サラダ", "副菜", 10, 0, 2, "easy",
-			"1. 野菜を洗って切る\n2. ボウルに盛り付ける\n3. ドレッシングをかける",
-			"新鮮野菜のサラダ",
+			"Spaghetti Carbonara", "Dinner", 15, 15, 4, "medium",
+			"1. Cook pasta until al dente\n2. Fry bacon until crispy\n3. Mix eggs with parmesan\n4. Toss hot pasta with egg mixture\n5. Add bacon and black pepper",
+			"Classic Italian carbonara",
 		},
 		{
-			"味噌汁", "副菜", 5, 10, 4, "easy",
-			"1. だしを取る\n2. 具材を煮る\n3. 味噌を溶く",
-			"定番の味噌汁",
+			"Chicken Parmesan", "Dinner", 20, 25, 4, "medium",
+			"1. Pound chicken thin and season\n2. Bread with flour, egg, and breadcrumbs\n3. Pan fry until golden\n4. Top with sauce and cheese\n5. Bake until cheese melts",
+			"Crispy chicken parmesan",
 		},
 		{
-			"きんぴらごぼう", "副菜", 10, 15, 3, "medium",
-			"1. ごぼうと人参を切る\n2. 炒める\n3. 調味料で味付け",
-			"シャキシャキきんぴら",
+			"Beef Stir Fry", "Dinner", 15, 10, 4, "medium",
+			"1. Slice beef thinly against grain\n2. Heat oil in wok\n3. Stir fry beef until browned\n4. Add vegetables and sauce\n5. Serve over rice",
+			"Quick and flavorful stir fry",
 		},
 		{
-			"クッキー", "おやつ", 30, 20, 12, "medium",
-			"1. バターと砂糖を混ぜる\n2. 小麦粉を加える\n3. 成形して焼く",
-			"手作りクッキー",
+			"Salmon with Vegetables", "Dinner", 10, 20, 4, "easy",
+			"1. Season salmon with salt and pepper\n2. Roast salmon in oven\n3. Steam or roast vegetables\n4. Serve with lemon wedges",
+			"Healthy salmon dinner",
 		},
 		{
-			"プリン", "おやつ", 15, 30, 6, "hard",
-			"1. カラメルを作る\n2. プリン液を作る\n3. 蒸し器で蒸す",
-			"なめらかプリン",
+			"Chicken Curry", "Dinner", 20, 35, 6, "medium",
+			"1. Brown chicken pieces in oil\n2. Sauté onions until soft\n3. Add spices and cook until fragrant\n4. Add coconut milk and simmer\n5. Return chicken to pot and cook until tender",
+			"Aromatic chicken curry",
+		},
+		{
+			"Beef Tacos", "Dinner", 15, 15, 4, "easy",
+			"1. Brown ground beef with onions\n2. Add spices and cook\n3. Warm tortillas\n4. Fill with beef and toppings\n5. Serve with lime wedges",
+			"Flavorful beef tacos",
+		},
+		{
+			"Vegetarian Chili", "Dinner", 20, 40, 8, "medium",
+			"1. Sauté onions, peppers, and garlic\n2. Add spices and tomato paste\n3. Add beans, tomatoes, and stock\n4. Simmer until thick\n5. Garnish with cheese and cilantro",
+			"Hearty vegetarian chili",
+		},
+		{
+			"Pork Chops with Apples", "Dinner", 15, 25, 4, "medium",
+			"1. Season pork chops with salt and pepper\n2. Sear in hot pan until browned\n3. Remove chops and sauté apples\n4. Return chops to pan and finish in oven",
+			"Tender pork chops with apples",
+		},
+		{
+			"Shrimp Scampi", "Dinner", 10, 10, 4, "medium",
+			"1. Cook pasta until al dente\n2. Sauté garlic in butter and oil\n3. Add shrimp and cook until pink\n4. Add lemon juice and pasta\n5. Toss with parsley",
+			"Garlicky shrimp scampi",
+		},
+		{
+			"Chicken Stir Fry", "Dinner", 15, 12, 4, "medium",
+			"1. Cut chicken into bite-sized pieces\n2. Heat oil in wok or large pan\n3. Stir fry chicken until cooked\n4. Add vegetables and sauce\n5. Serve over rice or noodles",
+			"Quick chicken stir fry",
+		},
+
+		// Snacks & Sides
+		{
+			"Roasted Vegetables", "Side", 15, 30, 6, "easy",
+			"1. Cut vegetables into even pieces\n2. Toss with olive oil and seasonings\n3. Roast in hot oven until tender\n4. Serve hot",
+			"Colorful roasted vegetables",
+		},
+		{
+			"Garlic Bread", "Side", 10, 12, 8, "easy",
+			"1. Mix butter with minced garlic and herbs\n2. Spread on sliced bread\n3. Wrap in foil and bake\n4. Serve warm",
+			"Crispy garlic bread",
+		},
+		{
+			"Mashed Potatoes", "Side", 15, 25, 6, "easy",
+			"1. Peel and chop potatoes\n2. Boil until tender\n3. Drain and mash with butter and milk\n4. Season with salt and pepper",
+			"Creamy mashed potatoes",
+		},
+		{
+			"Coleslaw", "Side", 15, 0, 8, "easy",
+			"1. Shred cabbage and carrots\n2. Make dressing with mayo and vinegar\n3. Toss vegetables with dressing\n4. Chill before serving",
+			"Crunchy coleslaw",
+		},
+		{
+			"Rice Pilaf", "Side", 10, 25, 6, "medium",
+			"1. Sauté rice in oil until lightly toasted\n2. Add stock and bring to boil\n3. Reduce heat and simmer covered\n4. Fluff with fork before serving",
+			"Fluffy rice pilaf",
 		},
 	}
 
@@ -458,10 +488,11 @@ func populateTestData() {
 						  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			rec.name, rec.category, rec.prepTime, rec.cookTime, rec.servings, rec.difficulty, rec.instructions, rec.description)
 		if err != nil {
-			log.Printf("%sをrecipesテーブルへデータ追加中のエラー: %v", rec.name, err)
+			log.Printf("Error adding %s to recipes table: %v", rec.name, err)
 		}
 	}
 
+	// Comprehensive recipe-ingredient relationships
 	recipeIngredientsData := []struct {
 		recipeID     int
 		ingredientID int
@@ -469,168 +500,199 @@ func populateTestData() {
 		unit         string
 		notes        string
 	}{
-		{1, 28, 4, "枚", "厚切り"},
-		{1, 38, 2, "個", ""},
-		{1, 50, 100, "ml", ""},
-		{1, 52, 20, "g", ""},
-		{1, 84, 2, "大さじ", "仕上げ用"},
+		// Scrambled Eggs (recipe 1)
+		{1, 36, 4, "large", "room temperature"},
+		{1, 55, 2, "tbsp", "for cooking"},
+		{1, 58, 1, "tsp", "to taste"},
+		{1, 59, 0.5, "tsp", "freshly ground"},
 
-		{2, 38, 3, "個", ""},
-		{2, 52, 10, "g", ""},
-		{2, 59, 1, "小さじ", ""},
-		{2, 70, 1, "小さじ", ""},
+		// Pancakes (recipe 2)
+		{2, 47, 2, "cups", "all-purpose"},
+		{2, 87, 2, "tbsp", "granulated"},
+		{2, 84, 2, "tsp", "double-acting"},
+		{2, 58, 1, "tsp", ""},
+		{2, 50, 1.5, "cups", "whole milk"},
+		{2, 36, 2, "large", "beaten"},
+		{2, 55, 0.25, "cup", "melted and cooled"},
 
-		{3, 32, 50, "g", ""},
-		{3, 50, 150, "ml", ""},
-		{3, 77, 1, "個", "スライス"},
-		{3, 78, 1, "本", ""},
+		// Oatmeal (recipe 3)
+		{3, 46, 0.5, "cup", "rolled oats"},
+		{3, 50, 1, "cup", "whole milk"},
+		{3, 66, 2, "tbsp", "to taste"},
+		{3, 79, 0.5, "tsp", "ground"},
+		{3, 74, 1, "medium", "sliced"},
 
-		{4, 33, 100, "g", ""},
-		{4, 38, 1, "個", ""},
-		{4, 50, 150, "ml", ""},
-		{4, 60, 2, "大さじ", ""},
-		{4, 52, 20, "g", ""},
+		// French Toast (recipe 4)
+		{4, 44, 8, "slices", "thick cut"},
+		{4, 36, 4, "large", "beaten"},
+		{4, 50, 0.5, "cup", "whole milk"},
+		{4, 86, 1, "tsp", "pure"},
+		{4, 55, 2, "tbsp", "for cooking"},
+		{4, 67, 0.25, "cup", "for serving"},
 
-		{5, 2, 1, "個", "みじん切り"},
-		{5, 26, 2, "カップ", "冷ご飯"},
-		{5, 38, 4, "個", ""},
-		{5, 59, 1, "小さじ", ""},
-		{5, 52, 10, "g", ""},
-		{5, 68, 2, "大さじ", ""},
+		// Breakfast Burrito (recipe 5)
+		{5, 36, 6, "large", "scrambled"},
+		{5, 52, 1, "cup", "shredded cheddar"},
+		{5, 41, 4, "strips", "cooked crispy"},
+		{7, 2, 2, "medium", "diced and roasted"},
+		// Note: Assuming tortillas would be ingredient ID that needs to be added
 
-		{6, 27, 200, "g", ""},
-		{6, 48, 80, "g", "スライス"},
-		{6, 38, 2, "個", ""},
-		{6, 51, 50, "g", "すりおろし"},
-		{6, 70, 1, "小さじ", ""},
+		// Caesar Salad (recipe 6)
+		{6, 11, 2, "heads", "chopped"},
+		{6, 54, 0.5, "cup", "grated"},
+		{6, 64, 0.25, "cup", "fresh squeezed"},
+		{6, 3, 3, "cloves", "minced"},
+		{6, 60, 0.25, "cup", "extra virgin"},
 
-		{7, 26, 2, "カップ", "冷ご飯"},
-		{7, 38, 2, "個", ""},
-		{7, 2, 1, "個", "みじん切り"},
-		{7, 23, 1, "本", "小口切り"},
-		{7, 58, 2, "大さじ", ""},
-		{7, 66, 1, "大さじ", ""},
+		// Grilled Chicken Sandwich (recipe 7)
+		{7, 26, 2, "pieces", "6 oz each"},
+		{7, 44, 4, "slices", "toasted"},
+		{7, 11, 4, "leaves", "fresh"},
+		{7, 1, 2, "slices", "thick cut"},
+		{7, 70, 2, "tbsp", ""},
 
-		{8, 31, 2, "玉", ""},
-		{8, 11, 100, "g", "細切り"},
-		{8, 6, 1, "本", "細切り"},
-		{8, 10, 1, "袋", ""},
-		{8, 69, 3, "大さじ", ""},
+		// Vegetable Soup (recipe 8)
+		{8, 2, 1, "large", "diced"},
+		{8, 5, 3, "large", "sliced"},
+		{8, 6, 3, "stalks", "chopped"},
+		{8, 90, 8, "cups", "low sodium"},
+		{8, 7, 2, "medium", "cubed"},
+		{8, 16, 2, "cups", "chopped"},
+		{8, 58, 1, "tsp", "to taste"},
+		{8, 59, 0.5, "tsp", "to taste"},
 
-		{9, 28, 4, "枚", ""},
-		{9, 52, 20, "g", ""},
-		{9, 47, 2, "枚", ""},
-		{9, 7, 2, "枚", ""},
-		{9, 1, 1, "個", "スライス"},
+		// Pasta Salad (recipe 9)
+		{9, 43, 1, "lb", "cooked and cooled"},
+		{9, 1, 2, "medium", "diced"},
+		{9, 4, 1, "large", "diced"},
+		{9, 12, 1, "large", "sliced"},
+		{9, 60, 0.33, "cup", "extra virgin"},
+		{9, 63, 0.25, "cup", "red wine"},
 
-		{10, 35, 200, "g", "一口大"},
-		{10, 2, 1, "個", "スライス"},
-		{10, 38, 3, "個", ""},
-		{10, 26, 2, "膳", ""},
-		{10, 58, 2, "大さじ", ""},
-		{10, 63, 2, "大さじ", ""},
+		// Chicken Quesadilla (recipe 10)
+		{10, 26, 2, "pieces", "cooked and diced"},
+		{10, 52, 1, "cup", "shredded"},
+		{10, 2, 0.5, "medium", "diced"},
+		{10, 4, 0.5, "medium", "diced"},
+		// Note: Tortillas needed
 
-		{11, 1, 2, "個", "角切り"},
-		{11, 2, 1, "個", "みじん切り"},
-		{11, 26, 2, "カップ", ""},
-		{11, 57, 2, "大さじ", ""},
-		{11, 59, 1, "小さじ", ""},
+		// Spaghetti Carbonara (recipe 11)
+		{11, 43, 1, "lb", "spaghetti"},
+		{11, 41, 6, "strips", "chopped"},
+		{11, 36, 4, "large", "beaten"},
+		{11, 54, 1, "cup", "grated"},
+		{11, 59, 1, "tsp", "freshly cracked"},
 
-		{12, 1, 3, "個", "ざく切り"},
-		{12, 3, 2, "片", "みじん切り"},
-		{12, 27, 200, "g", ""},
-		{12, 57, 2, "大さじ", ""},
-		{12, 59, 1, "小さじ", ""},
+		// Chicken Parmesan (recipe 12)
+		{12, 26, 4, "pieces", "6 oz each"},
+		{12, 47, 1, "cup", "for dredging"},
+		{12, 36, 2, "large", "beaten"},
+		{12, 89, 2, "cups", "Italian seasoned"},
+		{12, 53, 1, "cup", "shredded mozzarella"},
+		{12, 91, 2, "cups", "marinara sauce"},
 
-		{13, 1, 2, "個", "乱切り"},
-		{13, 4, 1, "本", "乱切り"},
-		{13, 5, 2, "個", "乱切り"},
-		{13, 6, 1, "本", "乱切り"},
-		{13, 61, 1, "箱", ""},
-		{13, 35, 200, "g", "一口大"},
+		// Beef Stir Fry (recipe 13)
+		{13, 29, 1, "lb", "thinly sliced"},
+		{13, 4, 2, "large", "julienned"},
+		{13, 5, 2, "large", "sliced"},
+		{13, 9, 2, "cups", "florets"},
+		{13, 62, 2, "tbsp", "for cooking"},
+		{13, 61, 3, "tbsp", "low sodium"},
+		{13, 42, 2, "cups", "cooked"},
 
-		{14, 35, 400, "g", "一口大"},
-		{14, 2, 2, "個", "スライス"},
-		{14, 61, 1, "箱", ""},
-		{14, 5, 1, "個", "乱切り"},
-		{14, 6, 1, "本", "乱切り"},
+		// Salmon with Vegetables (recipe 14)
+		{14, 32, 4, "fillets", "6 oz each"},
+		{14, 15, 2, "cups", "trimmed"},
+		{14, 5, 2, "large", "sliced"},
+		{14, 9, 2, "cups", "florets"},
+		{14, 60, 2, "tbsp", "extra virgin"},
+		{14, 73, 1, "large", "cut into wedges"},
 
-		{15, 45, 300, "g", ""},
-		{15, 2, 1, "個", "みじん切り"},
-		{15, 38, 1, "個", ""},
-		{15, 34, 50, "g", ""},
-		{15, 50, 2, "大さじ", ""},
+		// Chicken Curry (recipe 15)
+		{15, 27, 2, "lbs", "cut into pieces"},
+		{15, 2, 2, "large", "sliced"},
+		{15, 3, 4, "cloves", "minced"},
+		{15, 80, 1, "tbsp", "fresh grated"},
+		{15, 75, 2, "tsp", "ground"},
+		{15, 76, 1, "tsp", "ground"},
+		{15, 82, 1, "can", "full fat"},
 
-		{16, 36, 300, "g", ""},
-		{16, 22, 1, "片", "すりおろし"},
-		{16, 58, 2, "大さじ", ""},
-		{16, 63, 2, "大さじ", ""},
+		// Beef Tacos (recipe 16)
+		{16, 28, 1, "lb", "ground"},
+		{16, 2, 1, "medium", "diced"},
+		{16, 76, 2, "tsp", "ground"},
+		{16, 77, 1, "tsp", "chili powder"},
+		{16, 73, 1, "large", "cut into wedges"},
+		// Note: Tortillas, cheese, lettuce for toppings
 
-		{17, 39, 2, "切れ", ""},
-		{17, 59, 1, "小さじ", ""},
-		{17, 79, 1, "個", "くし切り"},
+		// Vegetarian Chili (recipe 17)
+		{17, 2, 1, "large", "diced"},
+		{17, 4, 2, "large", "diced"},
+		{17, 3, 4, "cloves", "minced"},
+		{17, 37, 2, "cans", "drained and rinsed"},
+		{17, 38, 2, "cans", "drained and rinsed"},
+		{17, 92, 1, "can", "crushed"},
+		{17, 90, 4, "cups", "vegetable"},
 
-		{18, 45, 150, "g", ""},
-		{18, 43, 1, "丁", "角切り"},
-		{18, 62, 2, "大さじ", ""},
-		{18, 87, 1, "大さじ", ""},
+		// Pork Chops with Apples (recipe 18)
+		{18, 31, 4, "pieces", "bone-in"},
+		{18, 74, 2, "large", "sliced"},
+		{18, 55, 2, "tbsp", "for cooking"},
+		{18, 79, 1, "tsp", "ground"},
+		{18, 58, 1, "tsp", "to taste"},
 
-		{19, 41, 200, "g", ""},
-		{19, 1, 2, "個", "角切り"},
-		{19, 68, 3, "大さじ", ""},
-		{19, 71, 1, "小さじ", ""},
+		// Shrimp Scampi (recipe 19)
+		{19, 34, 1, "lb", "peeled and deveined"},
+		{19, 43, 1, "lb", "linguine"},
+		{19, 3, 6, "cloves", "minced"},
+		{19, 55, 4, "tbsp", "unsalted"},
+		{19, 60, 2, "tbsp", "extra virgin"},
+		{19, 64, 0.25, "cup", "fresh"},
+		{19, 72, 0.25, "cup", "chopped fresh"},
 
-		{20, 36, 200, "g", "薄切り"},
-		{20, 5, 3, "個", "乱切り"},
-		{20, 6, 1, "本", "乱切り"},
-		{20, 2, 1, "個", "くし切り"},
-		{20, 58, 3, "大さじ", ""},
-		{20, 60, 2, "大さじ", ""},
-		{20, 63, 2, "大さじ", ""},
-		{20, 89, 1, "個", ""},
+		// Chicken Stir Fry (recipe 20)
+		{20, 26, 1, "lb", "cut into strips"},
+		{20, 4, 2, "large", "julienned"},
+		{20, 5, 2, "large", "sliced"},
+		{20, 9, 2, "cups", "florets"},
+		{20, 62, 2, "tbsp", "for cooking"},
+		{20, 61, 3, "tbsp", "low sodium"},
+		{20, 50, 2, "cups", "cooked jasmine"},
 
-		{21, 37, 300, "g", "薄切り"},
-		{21, 2, 1, "個", "くし切り"},
-		{21, 14, 1, "袋", ""},
-		{21, 17, 2, "本", ""},
-		{21, 43, 1, "丁", ""},
-		{21, 58, 4, "大さじ", ""},
-		{21, 60, 3, "大さじ", ""},
-		{21, 65, 2, "大さじ", ""},
+		// Roasted Vegetables (recipe 21)
+		{21, 5, 3, "large", "chunked"},
+		{21, 13, 2, "large", "sliced"},
+		{21, 4, 2, "large", "chunked"},
+		{21, 60, 3, "tbsp", "extra virgin"},
+		{21, 58, 1, "tsp", "to taste"},
+		{21, 59, 0.5, "tsp", "to taste"},
 
-		{22, 41, 200, "g", ""},
-		{22, 4, 1, "本", "輪切り"},
-		{22, 20, 1, "本", ""},
-		{22, 33, 100, "g", ""},
-		{22, 38, 1, "個", "冷水と混ぜる"},
+		// Garlic Bread (recipe 22)
+		{22, 44, 1, "loaf", "sliced"},
+		{22, 55, 0.5, "cup", "softened"},
+		{22, 3, 4, "cloves", "minced"},
+		{22, 72, 2, "tbsp", "chopped fresh"},
 
-		{23, 7, 4, "枚", "手でちぎる"},
-		{23, 8, 1, "本", "スライス"},
-		{23, 1, 1, "個", "くし切り"},
-		{23, 57, 2, "大さじ", "ドレッシング"},
-		{23, 64, 1, "大さじ", ""},
+		// Mashed Potatoes (recipe 23)
+		{23, 7, 3, "lbs", "peeled and cubed"},
+		{23, 55, 0.5, "cup", "unsalted"},
+		{23, 50, 0.5, "cup", "warm whole milk"},
+		{23, 58, 1, "tsp", "to taste"},
+		{23, 59, 0.5, "tsp", "white pepper"},
 
-		{24, 43, 1, "丁", "角切り"},
-		{24, 24, 2, "本", "小口切り"},
-		{24, 62, 2, "大さじ", ""},
-		{24, 89, 1, "個", ""},
+		// Coleslaw (recipe 24)
+		{24, 19, 1, "head", "shredded"},
+		{24, 5, 2, "large", "grated"},
+		{24, 70, 0.75, "cup", "mayonnaise"},
+		{24, 63, 2, "tbsp", "apple cider"},
+		{24, 87, 2, "tbsp", "granulated"},
 
-		{25, 15, 1, "本", "千切り"},
-		{25, 6, 1, "本", "千切り"},
-		{25, 66, 1, "大さじ", ""},
-		{25, 58, 2, "大さじ", ""},
-		{25, 63, 1, "大さじ", ""},
-		{25, 71, 1, "小さじ", ""},
-
-		{26, 33, 200, "g", ""},
-		{26, 52, 100, "g", ""},
-		{26, 60, 80, "g", ""},
-		{26, 38, 1, "個", ""},
-
-		{27, 38, 3, "個", ""},
-		{27, 50, 300, "ml", ""},
-		{27, 60, 80, "g", ""},
-		{27, 84, 2, "大さじ", ""},
+		// Rice Pilaf (recipe 25)
+		{25, 42, 1.5, "cups", "long grain"},
+		{25, 89, 3, "cups", "chicken stock"},
+		{25, 2, 1, "medium", "finely diced"},
+		{25, 60, 2, "tbsp", "extra virgin"},
+		{25, 58, 1, "tsp", "to taste"},
 	}
 
 	for _, ri := range recipeIngredientsData {
@@ -638,11 +700,11 @@ func populateTestData() {
 						  VALUES (?, ?, ?, ?, ?)`,
 			ri.recipeID, ri.ingredientID, ri.quantity, ri.unit, ri.notes)
 		if err != nil {
-			log.Printf("recipes_ingredientsテーブルへデータ追加中のエラー: %v", err)
+			log.Printf("Error adding recipe_ingredients relationship: %v", err)
 		}
 	}
 
-	fmt.Println("Test data populaated")
+	fmt.Println("Enhanced English test data populated successfully!")
 }
 
 func enableCORS(next http.HandlerFunc) http.HandlerFunc {
@@ -665,12 +727,12 @@ func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		log.Printf("%s %sを開始", r.Method, r.URL.Path)
+		log.Printf("Started %s %s", r.Method, r.URL.Path)
 
 		next(w, r)
 
 		duration := time.Since(start)
-		log.Printf("%s %sを%vで完了", r.Method, r.URL.Path, duration)
+		log.Printf("Completed %s %s in %v", r.Method, r.URL.Path, duration)
 	}
 }
 

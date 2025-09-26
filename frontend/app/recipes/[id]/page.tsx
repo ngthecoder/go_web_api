@@ -59,23 +59,23 @@ export default function RecipeDetailPage() {
       
       <div className="grid md:grid-cols-2 gap-8">
         <div>
-          <h2 className="text-2xl font-semibold mb-4">レシピ情報</h2>
+          <h2 className="text-2xl font-semibold mb-4">Recipe Information</h2>
           <ul className="space-y-2">
-            <li>カテゴリ: {recipe.category}</li>
-            <li>準備時間: {recipe.prep_time_minutes}分</li>
-            <li>調理時間: {recipe.cook_time_minutes}分</li>
-            <li>人数: {recipe.servings}人分</li>
-            <li>難易度: {recipe.difficulty}</li>
+            <li>Category: {recipe.category}</li>
+            <li>Prep Time: {recipe.prep_time_minutes} minutes</li>
+            <li>Cook Time: {recipe.cook_time_minutes} minutes</li>
+            <li>Servings: {recipe.servings}</li>
+            <li>Difficulty: {recipe.difficulty}</li>
           </ul>
         </div>
 
         <div>
-          <h2 className="text-2xl font-semibold mb-4">材料</h2>
+          <h2 className="text-2xl font-semibold mb-4">Ingredients</h2>
           <ul className="space-y-2">
             {ingredients.map(ing => (
               <li key={ing.ingredient_id} className="flex justify-between">
                 <span>{ing.name}</span>
-                <span>{ing.quantity}{ing.unit} {ing.notes}</span>
+                <span>{ing.quantity} {ing.unit} {ing.notes}</span>
               </li>
             ))}
           </ul>
@@ -83,7 +83,7 @@ export default function RecipeDetailPage() {
       </div>
 
       <div className="mt-8">
-        <h2 className="text-2xl font-semibold mb-4">作り方</h2>
+        <h2 className="text-2xl font-semibold mb-4">Instructions</h2>
         <div className="bg-gray-50 p-4 rounded-lg">
           <pre className="whitespace-pre-wrap">{recipe.instructions}</pre>
         </div>

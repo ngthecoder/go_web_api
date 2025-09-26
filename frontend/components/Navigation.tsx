@@ -11,13 +11,13 @@ export default function Navigation() {
           
           <div className="flex space-x-6">
             <Link href="/" className="text-gray-700 hover:text-blue-600">
-              レシピ一覧
+              Recipes
             </Link>
             <Link href="/ingredients" className="text-gray-700 hover:text-blue-600">
-              食材一覧
+              Ingredients
             </Link>
             <Link href="/find-recipes" className="text-gray-700 hover:text-blue-600">
-              食材検索
+              Find by Ingredients
             </Link>
           </div>
         </div>

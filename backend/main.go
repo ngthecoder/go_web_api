@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/ngthecoder/go_web_api/internal/auth"
 )
@@ -1548,16 +1549,21 @@ func main() {
 	populateTestData()
 	defer db.Close()
 
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "your-super-secret-jwt-key-change-in-production"
-		log.Println("Warning: Using default JWT secret")
+		log.Fatal("Missing JWT_SECRET attribute in .env file")
 	}
+	log.Println("Successfully loaded JWT_SECRET from .env file")
 
 	authService := auth.NewAuthService(db, jwtSecret)
 	authHandler := auth.NewAuthHandler(authService)
 
-	fmt.Println("Server running on port 8000")
+	log.Println("Server running on port 8000")
 
 	http.HandleFunc("/api/auth/register", loggingMiddleware(enableCORS(authHandler.RegisterHandler)))
 	http.HandleFunc("/api/auth/login", loggingMiddleware(enableCORS(authHandler.LoginHandler)))

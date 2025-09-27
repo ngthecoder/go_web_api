@@ -21,11 +21,13 @@ func (h *AuthHandler) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		if authHeader == "" {
 			http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+			return
 		}
 
 		claims, err := h.service.validateJWT(authHeader)
 		if err != nil {
 			http.Error(w, "Invalid or expired JWT token", http.StatusUnauthorized)
+			return
 		}
 
 		r.Header.Set("X-User-ID", claims.UserID)

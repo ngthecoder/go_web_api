@@ -14,6 +14,7 @@ import (
 	"github.com/ngthecoder/go_web_api/internal/auth"
 	"github.com/ngthecoder/go_web_api/internal/ingredients"
 	"github.com/ngthecoder/go_web_api/internal/recipes"
+	"github.com/ngthecoder/go_web_api/internal/users"
 )
 
 var db *sql.DB
@@ -849,6 +850,9 @@ func main() {
 	authService := auth.NewAuthService(db, jwtSecret)
 	authHandler := auth.NewAuthHandler(authService)
 
+	userService := users.NewUserService(db)
+	userHandler := users.NewUserHandler(userService)
+
 	recipesService := recipes.NewRecipesService(db)
 	recipesHandler := recipes.NewRecipesHandler(recipesService)
 
@@ -859,6 +863,11 @@ func main() {
 
 	http.HandleFunc("/api/auth/register", loggingMiddleware(enableCORS(authHandler.RegisterHandler)))
 	http.HandleFunc("/api/auth/login", loggingMiddleware(enableCORS(authHandler.LoginHandler)))
+
+	http.HandleFunc("/api/user/profile", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.GetProfile))))
+	http.HandleFunc("/api/user/liked-recipes", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.GetLikedRecipes))))
+	http.HandleFunc("/api/user/liked-recipes/add", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.AddLikedRecipe))))
+	http.HandleFunc("/api/user/liked-recipes/", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.RemoveLikedRecipe))))
 
 	http.HandleFunc("/api/ingredients", loggingMiddleware(enableCORS(ingredientsHandler.AllIngredientsHandler)))
 	http.HandleFunc("/api/ingredients/", loggingMiddleware(enableCORS(ingredientsHandler.IngredientDetailsHandler)))

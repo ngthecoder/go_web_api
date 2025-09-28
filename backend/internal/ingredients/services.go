@@ -2,11 +2,9 @@ package ingredients
 
 import (
 	"database/sql"
-	"errors"
-	"log"
-	"net/http"
 	"strings"
 
+	"github.com/ngthecoder/go_web_api/internal/errors"
 	"github.com/ngthecoder/go_web_api/internal/recipes"
 )
 
@@ -20,28 +18,24 @@ func NewIngredientService(db *sql.DB) *IngredientService {
 	}
 }
 
-func (s *IngredientService) ingredientsCounter(w *http.ResponseWriter, search, category string) (int, error) {
+func (s *IngredientService) ingredientsCounter(search, category string) (int, error) {
 	sqlCountQuery, args := s.buildIngredientCountQuery(search, category)
 
 	var total int
 	err := s.db.QueryRow(sqlCountQuery, args...).Scan(&total)
 	if err != nil {
-		log.Printf("Counting Query: %s", sqlCountQuery)
-		http.Error(*w, "Data scanning error", http.StatusInternalServerError)
-		return 0, errors.New("Data scanning error")
+		return 0, errors.NewInternalServerError("Data scanning error", err)
 	}
 
 	return total, nil
 }
 
-func (s *IngredientService) ingredientsRetriever(w *http.ResponseWriter, search, category, sort, order string, limit, offset int) ([]Ingredient, error) {
+func (s *IngredientService) ingredientsRetriever(search, category, sort, order string, limit, offset int) ([]Ingredient, error) {
 	sqlQuery, args := s.buildIngredientQuery(search, category, sort, order, limit, offset)
 
 	rows, err := s.db.Query(sqlQuery, args...)
 	if err != nil {
-		log.Printf("Query: %s", sqlQuery)
-		http.Error(*w, "Database error", http.StatusInternalServerError)
-		return nil, errors.New("Database error")
+		return nil, errors.NewInternalServerError("Database error", err)
 	}
 	defer rows.Close()
 
@@ -50,13 +44,92 @@ func (s *IngredientService) ingredientsRetriever(w *http.ResponseWriter, search,
 		var ingredient Ingredient
 		err = rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.Category, &ingredient.Calories, &ingredient.Description)
 		if err != nil {
-			http.Error(*w, "Data scanning error", http.StatusInternalServerError)
-			return nil, errors.New("Data scanning error")
+			return nil, errors.NewInternalServerError("Data scanning error", err)
 		}
 		ingredients = append(ingredients, ingredient)
 	}
 
 	return ingredients, nil
+}
+
+func (s *IngredientService) ingredientDetailsWithRecipesRetriever(ingredientID int) (Ingredient, []recipes.Recipe, error) {
+	query := `
+        SELECT
+            i.id, i.name, i.category, i.calories_per_100g, i.description,
+            ri.quantity, ri.unit, ri.notes,
+            r.id, r.name, r.category, r.prep_time_minutes, r.cook_time_minutes,
+            r.servings, r.difficulty, r.instructions, r.description
+        FROM
+            ingredients AS i
+        LEFT JOIN
+            recipe_ingredients AS ri ON i.id = ri.ingredient_id
+        LEFT JOIN
+            recipes AS r ON ri.recipe_id = r.id
+        WHERE
+            i.id = ?;
+    `
+
+	rows, err := s.db.Query(query, ingredientID)
+	if err != nil {
+		return Ingredient{}, nil, errors.NewInternalServerError("Database query error", err)
+	}
+	defer rows.Close()
+
+	var ingredient Ingredient
+	var associatedRecipes []recipes.Recipe
+	foundIngredient := false
+
+	for rows.Next() {
+		var (
+			iID, calories                                     int
+			iName, iCategory, iDesc                           string
+			quantity                                          sql.NullFloat64
+			unit, notes                                       sql.NullString
+			rID, prepTime, cookTime, servings                 sql.NullInt64
+			rName, rCategory, difficulty, instructions, rDesc sql.NullString
+		)
+
+		err := rows.Scan(
+			&iID, &iName, &iCategory, &calories, &iDesc,
+			&quantity, &unit, &notes,
+			&rID, &rName, &rCategory, &prepTime, &cookTime,
+			&servings, &difficulty, &instructions, &rDesc,
+		)
+		if err != nil {
+			return Ingredient{}, nil, errors.NewInternalServerError("Data scanning error", err)
+		}
+
+		if !foundIngredient {
+			ingredient = Ingredient{
+				ID:          iID,
+				Name:        iName,
+				Category:    iCategory,
+				Calories:    calories,
+				Description: iDesc,
+			}
+			foundIngredient = true
+		}
+
+		if rID.Valid {
+			associatedRecipes = append(associatedRecipes, recipes.Recipe{
+				ID:              int(rID.Int64),
+				Name:            rName.String,
+				Category:        rCategory.String,
+				PrepTimeMinutes: int(prepTime.Int64),
+				CookTimeMinutes: int(cookTime.Int64),
+				Servings:        int(servings.Int64),
+				Difficulty:      difficulty.String,
+				Instructions:    instructions.String,
+				Description:     rDesc.String,
+			})
+		}
+	}
+
+	if !foundIngredient {
+		return Ingredient{}, nil, errors.NewNotFoundError("Ingredient not found")
+	}
+
+	return ingredient, associatedRecipes, nil
 }
 
 func (s *IngredientService) buildIngredientCountQuery(search, category string) (string, []interface{}) {
@@ -115,87 +188,4 @@ func (s *IngredientService) buildIngredientQuery(search, category, sort, order s
 	args = append(args, limit, offset)
 
 	return query, args
-}
-
-func (s *IngredientService) ingredientDetailsWithRecipesRetriever(w *http.ResponseWriter, ingredientID int) (Ingredient, []recipes.Recipe, error) {
-	query := `
-        SELECT
-            i.id, i.name, i.category, i.calories_per_100g, i.description,
-            ri.quantity, ri.unit, ri.notes,
-            r.id, r.name, r.category, r.prep_time_minutes, r.cook_time_minutes,
-            r.servings, r.difficulty, r.instructions, r.description
-        FROM
-            ingredients AS i
-        LEFT JOIN
-            recipe_ingredients AS ri ON i.id = ri.ingredient_id
-        LEFT JOIN
-            recipes AS r ON ri.recipe_id = r.id
-        WHERE
-            i.id = ?;
-    `
-
-	rows, err := s.db.Query(query, ingredientID)
-	if err != nil {
-		http.Error(*w, "Database query error", http.StatusInternalServerError)
-		return Ingredient{}, nil, errors.New("Database query error")
-	}
-	defer rows.Close()
-
-	var ingredient Ingredient
-	var associatedRecipes []recipes.Recipe
-	foundIngredient := false
-
-	for rows.Next() {
-		var (
-			iID, calories                                     int
-			iName, iCategory, iDesc                           string
-			quantity                                          sql.NullFloat64
-			unit, notes                                       sql.NullString
-			rID, prepTime, cookTime, servings                 sql.NullInt64
-			rName, rCategory, difficulty, instructions, rDesc sql.NullString
-		)
-
-		err := rows.Scan(
-			&iID, &iName, &iCategory, &calories, &iDesc,
-			&quantity, &unit, &notes,
-			&rID, &rName, &rCategory, &prepTime, &cookTime,
-			&servings, &difficulty, &instructions, &rDesc,
-		)
-		if err != nil {
-			log.Println("Scan error:", err)
-			continue
-		}
-
-		if !foundIngredient {
-			ingredient = Ingredient{
-				ID:          iID,
-				Name:        iName,
-				Category:    iCategory,
-				Calories:    calories,
-				Description: iDesc,
-			}
-			foundIngredient = true
-		}
-
-		if rID.Valid {
-			associatedRecipes = append(associatedRecipes, recipes.Recipe{
-				ID:              int(rID.Int64),
-				Name:            rName.String,
-				Category:        rCategory.String,
-				PrepTimeMinutes: int(prepTime.Int64),
-				CookTimeMinutes: int(cookTime.Int64),
-				Servings:        int(servings.Int64),
-				Difficulty:      difficulty.String,
-				Instructions:    instructions.String,
-				Description:     rDesc.String,
-			})
-		}
-	}
-
-	if !foundIngredient {
-		http.Error(*w, "Ingredient not found", http.StatusNotFound)
-		return Ingredient{}, nil, errors.New("Ingredient not found")
-	}
-
-	return ingredient, associatedRecipes, nil
 }

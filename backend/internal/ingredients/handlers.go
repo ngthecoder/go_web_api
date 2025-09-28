@@ -2,10 +2,11 @@ package ingredients
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/ngthecoder/go_web_api/internal/errors"
 )
 
 type IngredientHandler struct {
@@ -52,18 +53,18 @@ func (h *IngredientHandler) AllIngredientsHandler(w http.ResponseWriter, r *http
 
 	offset := (page - 1) * limit
 
-	total, err := h.ingredientService.ingredientsCounter(&w, search, category)
+	total, err := h.ingredientService.ingredientsCounter(search, category)
 	if err != nil {
-		log.Printf("Error: %v", err)
+		errors.WriteHTTPError(w, err)
 		return
 	}
 
 	totalPages := (total + limit - 1) / limit
 	hasNext := page < totalPages
 
-	ingredients, err := h.ingredientService.ingredientsRetriever(&w, search, category, sort, order, limit, offset)
+	ingredients, err := h.ingredientService.ingredientsRetriever(search, category, sort, order, limit, offset)
 	if err != nil {
-		log.Printf("Error: %v", err)
+		errors.WriteHTTPError(w, err)
 		return
 	}
 
@@ -81,19 +82,19 @@ func (h *IngredientHandler) AllIngredientsHandler(w http.ResponseWriter, r *http
 func (h *IngredientHandler) IngredientDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	pathParts := strings.Split(r.URL.Path, "/")
 	if len(pathParts) != 4 || pathParts[3] == "" {
-		http.Error(w, "Invalid URL format. Use /api/ingredients/{id}", http.StatusBadRequest)
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid URL format. Use /api/ingredients/{id}"))
 		return
 	}
 
 	ingredientID, err := strconv.Atoi(pathParts[3])
 	if err != nil {
-		http.Error(w, "Invalid ingredient ID", http.StatusBadRequest)
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid ingredient ID"))
 		return
 	}
 
-	ingredient, associatedRecipes, err := h.ingredientService.ingredientDetailsWithRecipesRetriever(&w, ingredientID)
+	ingredient, associatedRecipes, err := h.ingredientService.ingredientDetailsWithRecipesRetriever(ingredientID)
 	if err != nil {
-		log.Printf("Error: %v", err)
+		errors.WriteHTTPError(w, err)
 		return
 	}
 

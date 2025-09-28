@@ -44,20 +44,21 @@ func (h *UserHandler) GetLikedRecipes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) AddLikedRecipe(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := r.Context().Value("user_id").(string)
 
-	pathParts := strings.Split(r.URL.Path, "/")
-	if len(pathParts) != 4 || pathParts[3] == "" {
-		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid URL format. Use /api/user/liked-recipes/{id}"))
-		return
-	}
-	recipeID, err := strconv.Atoi(pathParts[3])
+	var request LikedRecipeRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid recipe ID format"))
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid JSON"))
 		return
 	}
 
-	err = h.userService.addLikedRecipe(userID, recipeID)
+	err = h.userService.addLikedRecipe(userID, request.RecipeID)
 	if err != nil {
 		errors.WriteHTTPError(w, err)
 		return
@@ -69,16 +70,22 @@ func (h *UserHandler) AddLikedRecipe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) RemoveLikedRecipe(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := r.Context().Value("user_id").(string)
 
 	pathParts := strings.Split(r.URL.Path, "/")
-	if len(pathParts) != 4 || pathParts[3] == "" {
-		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid URL format. Use /api/user/liked-recipes/{id}"))
+	if len(pathParts) != 5 || pathParts[4] == "" {
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid URL format"))
 		return
 	}
-	recipeID, err := strconv.Atoi(pathParts[3])
+
+	recipeID, err := strconv.Atoi(pathParts[4])
 	if err != nil {
-		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid recipe ID format"))
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid recipe ID"))
 		return
 	}
 

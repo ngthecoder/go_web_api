@@ -2,10 +2,11 @@ package recipes
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/ngthecoder/go_web_api/internal/errors"
 )
 
 type RecipeHandler struct {
@@ -65,18 +66,18 @@ func (h *RecipeHandler) AllRecipesHandler(w http.ResponseWriter, r *http.Request
 
 	offset := (page - 1) * limit
 
-	total, err := h.recipeService.recipesCounter(&w, search, category, difficulty, maxTime)
+	total, err := h.recipeService.recipesCounter(search, category, difficulty, maxTime)
 	if err != nil {
-		log.Printf("Error: %v", err)
+		errors.WriteHTTPError(w, err)
 		return
 	}
 
 	totalPages := (total + limit - 1) / limit
 	hasNext := page < totalPages
 
-	recipes, err := h.recipeService.recipesRetriever(&w, search, category, difficulty, sort, order, maxTime, limit, offset)
+	recipes, err := h.recipeService.recipesRetriever(search, category, difficulty, sort, order, maxTime, limit, offset)
 	if err != nil {
-		log.Printf("Error: %v", err)
+		errors.WriteHTTPError(w, err)
 		return
 	}
 
@@ -95,11 +96,15 @@ func (h *RecipeHandler) RecipeDetailHandler(w http.ResponseWriter, r *http.Reque
 	idStr := r.URL.Path[len("/api/recipes/"):]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid recipe id", http.StatusBadRequest)
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid recipe id"))
 		return
 	}
 
-	recipe, ingredients, err := h.recipeService.recipeDetailsWithIngredientsRetriever(&w, id)
+	recipe, ingredients, err := h.recipeService.recipeDetailsWithIngredientsRetriever(id)
+	if err != nil {
+		errors.WriteHTTPError(w, err)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	resp := RecipeWithIngredients{Recipe: recipe, Ingredients: ingredients}
@@ -113,7 +118,7 @@ func (h *RecipeHandler) FindRecipesByIngredientsHandler(w http.ResponseWriter, r
 	limitParams := query.Get("limit")
 
 	if ingredientsParams == "" {
-		http.Error(w, "Missing required parameters: ingredients", http.StatusBadRequest)
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Missing required parameters: ingredients"))
 		return
 	}
 
@@ -138,13 +143,13 @@ func (h *RecipeHandler) FindRecipesByIngredientsHandler(w http.ResponseWriter, r
 	}
 
 	if len(ingredientIDs) == 0 {
-		http.Error(w, "Invalid ingredient IDs", http.StatusBadRequest)
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid ingredient IDs"))
 		return
 	}
 
-	err, matchedRecipes := h.recipeService.matchedRecipesRetriever(&w, matchType, ingredientIDs, limit)
+	matchedRecipes, err := h.recipeService.matchedRecipesRetriever(matchType, ingredientIDs, limit)
 	if err != nil {
-		log.Printf("Error: %v", err)
+		errors.WriteHTTPError(w, err)
 		return
 	}
 
@@ -155,13 +160,13 @@ func (h *RecipeHandler) FindRecipesByIngredientsHandler(w http.ResponseWriter, r
 func (h *RecipeHandler) ShoppingListHandler(w http.ResponseWriter, r *http.Request) {
 	pathParts := strings.Split(r.URL.Path, "/")
 	if len(pathParts) < 5 || pathParts[4] == "" {
-		http.Error(w, "Invalid URL format. Use /api/recipes/shopping-list/{id}", http.StatusBadRequest)
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid URL format. Use /api/recipes/shopping-list/{id}"))
 		return
 	}
 
 	recipeID, err := strconv.Atoi(pathParts[4])
 	if err != nil {
-		http.Error(w, "Invalid recipe ID", http.StatusBadRequest)
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid recipe ID"))
 		return
 	}
 
@@ -177,9 +182,9 @@ func (h *RecipeHandler) ShoppingListHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	shoppingList, err := h.recipeService.shoppingListRetriever(&w, recipeID, haveIngredientIDs)
+	shoppingList, err := h.recipeService.shoppingListRetriever(recipeID, haveIngredientIDs)
 	if err != nil {
-		log.Printf("Error: %v", err)
+		errors.WriteHTTPError(w, err)
 		return
 	}
 

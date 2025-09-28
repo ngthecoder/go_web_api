@@ -9,17 +9,17 @@ import (
 	"github.com/ngthecoder/go_web_api/internal/errors"
 )
 
-type RecipeHandler struct {
-	recipeService *RecipeService
+type RecipesHandler struct {
+	recipesService *RecipesService
 }
 
-func NewRecipesHandler(s *RecipeService) *RecipeHandler {
-	return &RecipeHandler{
-		recipeService: s,
+func NewRecipesHandler(s *RecipesService) *RecipesHandler {
+	return &RecipesHandler{
+		recipesService: s,
 	}
 }
 
-func (h *RecipeHandler) AllRecipesHandler(w http.ResponseWriter, r *http.Request) {
+func (h *RecipesHandler) AllRecipesHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	search := strings.TrimSpace(query.Get("search"))
 	category := strings.TrimSpace(query.Get("category"))
@@ -66,7 +66,7 @@ func (h *RecipeHandler) AllRecipesHandler(w http.ResponseWriter, r *http.Request
 
 	offset := (page - 1) * limit
 
-	total, err := h.recipeService.recipesCounter(search, category, difficulty, maxTime)
+	total, err := h.recipesService.recipesCounter(search, category, difficulty, maxTime)
 	if err != nil {
 		errors.WriteHTTPError(w, err)
 		return
@@ -75,7 +75,7 @@ func (h *RecipeHandler) AllRecipesHandler(w http.ResponseWriter, r *http.Request
 	totalPages := (total + limit - 1) / limit
 	hasNext := page < totalPages
 
-	recipes, err := h.recipeService.recipesRetriever(search, category, difficulty, sort, order, maxTime, limit, offset)
+	recipes, err := h.recipesService.recipesRetriever(search, category, difficulty, sort, order, maxTime, limit, offset)
 	if err != nil {
 		errors.WriteHTTPError(w, err)
 		return
@@ -92,7 +92,7 @@ func (h *RecipeHandler) AllRecipesHandler(w http.ResponseWriter, r *http.Request
 	})
 }
 
-func (h *RecipeHandler) RecipeDetailHandler(w http.ResponseWriter, r *http.Request) {
+func (h *RecipesHandler) RecipeDetailHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Path[len("/api/recipes/"):]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -100,7 +100,7 @@ func (h *RecipeHandler) RecipeDetailHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	recipe, ingredients, err := h.recipeService.recipeDetailsWithIngredientsRetriever(id)
+	recipe, ingredients, err := h.recipesService.recipeDetailsWithIngredientsRetriever(id)
 	if err != nil {
 		errors.WriteHTTPError(w, err)
 		return
@@ -111,7 +111,7 @@ func (h *RecipeHandler) RecipeDetailHandler(w http.ResponseWriter, r *http.Reque
 	json.NewEncoder(w).Encode(resp)
 }
 
-func (h *RecipeHandler) FindRecipesByIngredientsHandler(w http.ResponseWriter, r *http.Request) {
+func (h *RecipesHandler) FindRecipesByIngredientsHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	ingredientsParams := query.Get("ingredients")
 	matchType := query.Get("match_type")
@@ -147,7 +147,7 @@ func (h *RecipeHandler) FindRecipesByIngredientsHandler(w http.ResponseWriter, r
 		return
 	}
 
-	matchedRecipes, err := h.recipeService.matchedRecipesRetriever(matchType, ingredientIDs, limit)
+	matchedRecipes, err := h.recipesService.matchedRecipesRetriever(matchType, ingredientIDs, limit)
 	if err != nil {
 		errors.WriteHTTPError(w, err)
 		return
@@ -157,7 +157,7 @@ func (h *RecipeHandler) FindRecipesByIngredientsHandler(w http.ResponseWriter, r
 	json.NewEncoder(w).Encode(matchedRecipes)
 }
 
-func (h *RecipeHandler) ShoppingListHandler(w http.ResponseWriter, r *http.Request) {
+func (h *RecipesHandler) ShoppingListHandler(w http.ResponseWriter, r *http.Request) {
 	pathParts := strings.Split(r.URL.Path, "/")
 	if len(pathParts) < 5 || pathParts[4] == "" {
 		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid URL format. Use /api/recipes/shopping-list/{id}"))
@@ -182,7 +182,7 @@ func (h *RecipeHandler) ShoppingListHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	shoppingList, err := h.recipeService.shoppingListRetriever(recipeID, haveIngredientIDs)
+	shoppingList, err := h.recipesService.shoppingListRetriever(recipeID, haveIngredientIDs)
 	if err != nil {
 		errors.WriteHTTPError(w, err)
 		return

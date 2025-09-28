@@ -9,17 +9,17 @@ import (
 	"github.com/ngthecoder/go_web_api/internal/errors"
 )
 
-type IngredientHandler struct {
-	ingredientService *IngredientService
+type IngredientsHandler struct {
+	ingredientsService *IngredientsService
 }
 
-func NewIngredientHandler(s *IngredientService) *IngredientHandler {
-	return &IngredientHandler{
-		ingredientService: s,
+func NewIngredientsHandler(s *IngredientsService) *IngredientsHandler {
+	return &IngredientsHandler{
+		ingredientsService: s,
 	}
 }
 
-func (h *IngredientHandler) AllIngredientsHandler(w http.ResponseWriter, r *http.Request) {
+func (h *IngredientsHandler) AllIngredientsHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	search := strings.TrimSpace(query.Get("search"))
 	category := strings.TrimSpace(query.Get("category"))
@@ -53,7 +53,7 @@ func (h *IngredientHandler) AllIngredientsHandler(w http.ResponseWriter, r *http
 
 	offset := (page - 1) * limit
 
-	total, err := h.ingredientService.ingredientsCounter(search, category)
+	total, err := h.ingredientsService.ingredientsCounter(search, category)
 	if err != nil {
 		errors.WriteHTTPError(w, err)
 		return
@@ -62,7 +62,7 @@ func (h *IngredientHandler) AllIngredientsHandler(w http.ResponseWriter, r *http
 	totalPages := (total + limit - 1) / limit
 	hasNext := page < totalPages
 
-	ingredients, err := h.ingredientService.ingredientsRetriever(search, category, sort, order, limit, offset)
+	ingredients, err := h.ingredientsService.ingredientsRetriever(search, category, sort, order, limit, offset)
 	if err != nil {
 		errors.WriteHTTPError(w, err)
 		return
@@ -79,7 +79,7 @@ func (h *IngredientHandler) AllIngredientsHandler(w http.ResponseWriter, r *http
 	})
 }
 
-func (h *IngredientHandler) IngredientDetailsHandler(w http.ResponseWriter, r *http.Request) {
+func (h *IngredientsHandler) IngredientDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	pathParts := strings.Split(r.URL.Path, "/")
 	if len(pathParts) != 4 || pathParts[3] == "" {
 		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid URL format. Use /api/ingredients/{id}"))
@@ -92,7 +92,7 @@ func (h *IngredientHandler) IngredientDetailsHandler(w http.ResponseWriter, r *h
 		return
 	}
 
-	ingredient, associatedRecipes, err := h.ingredientService.ingredientDetailsWithRecipesRetriever(ingredientID)
+	ingredient, associatedRecipes, err := h.ingredientsService.ingredientDetailsWithRecipesRetriever(ingredientID)
 	if err != nil {
 		errors.WriteHTTPError(w, err)
 		return

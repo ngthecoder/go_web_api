@@ -8,17 +8,17 @@ import (
 	"github.com/ngthecoder/go_web_api/internal/errors"
 )
 
-type RecipeService struct {
+type RecipesService struct {
 	db *sql.DB
 }
 
-func NewRecipeService(db *sql.DB) *RecipeService {
-	return &RecipeService{
+func NewRecipesService(db *sql.DB) *RecipesService {
+	return &RecipesService{
 		db: db,
 	}
 }
 
-func (s *RecipeService) recipesCounter(search, category, difficulty string, maxTime int) (int, error) {
+func (s *RecipesService) recipesCounter(search, category, difficulty string, maxTime int) (int, error) {
 	sqlCountQuery, args := s.buildRecipeCountQuery(search, category, difficulty, maxTime)
 
 	var total int
@@ -30,7 +30,7 @@ func (s *RecipeService) recipesCounter(search, category, difficulty string, maxT
 	return total, nil
 }
 
-func (s *RecipeService) recipesRetriever(search, category, difficulty, sort, order string, maxTime, limit, offset int) ([]Recipe, error) {
+func (s *RecipesService) recipesRetriever(search, category, difficulty, sort, order string, maxTime, limit, offset int) ([]Recipe, error) {
 	sqlQuery, args := s.buildRecipeQuery(search, category, difficulty, sort, order, maxTime, limit, offset)
 
 	rows, err := s.db.Query(sqlQuery, args...)
@@ -52,7 +52,7 @@ func (s *RecipeService) recipesRetriever(search, category, difficulty, sort, ord
 	return recipes, nil
 }
 
-func (s *RecipeService) recipeDetailsWithIngredientsRetriever(id int) (Recipe, []IngredientWithQuantity, error) {
+func (s *RecipesService) recipeDetailsWithIngredientsRetriever(id int) (Recipe, []IngredientWithQuantity, error) {
 	var recipe Recipe
 	err := s.db.QueryRow(`
 		SELECT id, name, category, prep_time_minutes, cook_time_minutes, servings, difficulty, instructions, description 
@@ -91,7 +91,7 @@ func (s *RecipeService) recipeDetailsWithIngredientsRetriever(id int) (Recipe, [
 	return recipe, ingredients, nil
 }
 
-func (s *RecipeService) matchedRecipesRetriever(matchType string, ingredientIDs []int, limit int) ([]MatchedRecipe, error) {
+func (s *RecipesService) matchedRecipesRetriever(matchType string, ingredientIDs []int, limit int) ([]MatchedRecipe, error) {
 	sqlQuery := ""
 	args := []interface{}{}
 
@@ -165,7 +165,7 @@ func (s *RecipeService) matchedRecipesRetriever(matchType string, ingredientIDs 
 	return matchedRecipes, nil
 }
 
-func (s *RecipeService) shoppingListRetriever(recipeID int, haveIngredientIDs map[int]struct{}) ([]IngredientWithQuantity, error) {
+func (s *RecipesService) shoppingListRetriever(recipeID int, haveIngredientIDs map[int]struct{}) ([]IngredientWithQuantity, error) {
 	query := `
 		SELECT
 			ri.ingredient_id,
@@ -215,7 +215,7 @@ func (s *RecipeService) shoppingListRetriever(recipeID int, haveIngredientIDs ma
 	return shoppingList, nil
 }
 
-func (s *RecipeService) buildRecipeCountQuery(search, category, difficulty string, maxTime int) (string, []interface{}) {
+func (s *RecipesService) buildRecipeCountQuery(search, category, difficulty string, maxTime int) (string, []interface{}) {
 	query := "SELECT COUNT(*) FROM recipes"
 	conditions := []string{}
 	args := []interface{}{}
@@ -248,7 +248,7 @@ func (s *RecipeService) buildRecipeCountQuery(search, category, difficulty strin
 	return query, args
 }
 
-func (s *RecipeService) buildRecipeQuery(search, category, difficulty, sort, order string, maxTime, limit, offset int) (string, []interface{}) {
+func (s *RecipesService) buildRecipeQuery(search, category, difficulty, sort, order string, maxTime, limit, offset int) (string, []interface{}) {
 	query := "SELECT id, name, category, prep_time_minutes, cook_time_minutes, servings, difficulty, instructions, description FROM recipes"
 	conditions := []string{}
 	args := []interface{}{}

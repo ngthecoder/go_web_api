@@ -8,17 +8,17 @@ import (
 	"github.com/ngthecoder/go_web_api/internal/recipes"
 )
 
-type IngredientService struct {
+type IngredientsService struct {
 	db *sql.DB
 }
 
-func NewIngredientService(db *sql.DB) *IngredientService {
-	return &IngredientService{
+func NewIngredientsService(db *sql.DB) *IngredientsService {
+	return &IngredientsService{
 		db: db,
 	}
 }
 
-func (s *IngredientService) ingredientsCounter(search, category string) (int, error) {
+func (s *IngredientsService) ingredientsCounter(search, category string) (int, error) {
 	sqlCountQuery, args := s.buildIngredientCountQuery(search, category)
 
 	var total int
@@ -30,7 +30,7 @@ func (s *IngredientService) ingredientsCounter(search, category string) (int, er
 	return total, nil
 }
 
-func (s *IngredientService) ingredientsRetriever(search, category, sort, order string, limit, offset int) ([]Ingredient, error) {
+func (s *IngredientsService) ingredientsRetriever(search, category, sort, order string, limit, offset int) ([]Ingredient, error) {
 	sqlQuery, args := s.buildIngredientQuery(search, category, sort, order, limit, offset)
 
 	rows, err := s.db.Query(sqlQuery, args...)
@@ -52,7 +52,7 @@ func (s *IngredientService) ingredientsRetriever(search, category, sort, order s
 	return ingredients, nil
 }
 
-func (s *IngredientService) ingredientDetailsWithRecipesRetriever(ingredientID int) (Ingredient, []recipes.Recipe, error) {
+func (s *IngredientsService) ingredientDetailsWithRecipesRetriever(ingredientID int) (Ingredient, []recipes.Recipe, error) {
 	query := `
         SELECT
             i.id, i.name, i.category, i.calories_per_100g, i.description,
@@ -132,7 +132,7 @@ func (s *IngredientService) ingredientDetailsWithRecipesRetriever(ingredientID i
 	return ingredient, associatedRecipes, nil
 }
 
-func (s *IngredientService) buildIngredientCountQuery(search, category string) (string, []interface{}) {
+func (s *IngredientsService) buildIngredientCountQuery(search, category string) (string, []interface{}) {
 	query := "SELECT COUNT(*) FROM ingredients"
 	conditions := []string{}
 	args := []interface{}{}
@@ -155,7 +155,7 @@ func (s *IngredientService) buildIngredientCountQuery(search, category string) (
 	return query, args
 }
 
-func (s *IngredientService) buildIngredientQuery(search, category, sort, order string, limit, offset int) (string, []interface{}) {
+func (s *IngredientsService) buildIngredientQuery(search, category, sort, order string, limit, offset int) (string, []interface{}) {
 	query := "SELECT id, name, category, calories_per_100g, description FROM ingredients"
 	conditions := []string{}
 	args := []interface{}{}

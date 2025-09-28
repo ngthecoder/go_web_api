@@ -849,11 +849,11 @@ func main() {
 	authService := auth.NewAuthService(db, jwtSecret)
 	authHandler := auth.NewAuthHandler(authService)
 
-	recipesService := recipes.NewRecipeService(db)
+	recipesService := recipes.NewRecipesService(db)
 	recipesHandler := recipes.NewRecipesHandler(recipesService)
 
-	ingredientsService := ingredients.NewIngredientService(db)
-	ingredientsHandler := ingredients.NewIngredientHandler(ingredientsService)
+	ingredientsService := ingredients.NewIngredientsService(db)
+	ingredientsHandler := ingredients.NewIngredientsHandler(ingredientsService)
 
 	log.Println("Server running on port 8000")
 

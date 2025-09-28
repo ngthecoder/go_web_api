@@ -65,7 +65,7 @@ func (h *RecipeHandler) AllRecipesHandler(w http.ResponseWriter, r *http.Request
 
 	offset := (page - 1) * limit
 
-	err, total := h.recipeService.recipesCounter(&w, search, category, difficulty, maxTime)
+	total, err := h.recipeService.recipesCounter(&w, search, category, difficulty, maxTime)
 	if err != nil {
 		log.Printf("Error: %v", err)
 		return
@@ -74,7 +74,7 @@ func (h *RecipeHandler) AllRecipesHandler(w http.ResponseWriter, r *http.Request
 	totalPages := (total + limit - 1) / limit
 	hasNext := page < totalPages
 
-	err, recipes := h.recipeService.recipesRetriever(&w, search, category, difficulty, sort, order, maxTime, limit, offset)
+	recipes, err := h.recipeService.recipesRetriever(&w, search, category, difficulty, sort, order, maxTime, limit, offset)
 	if err != nil {
 		log.Printf("Error: %v", err)
 		return
@@ -99,7 +99,7 @@ func (h *RecipeHandler) RecipeDetailHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err, recipe, ingredients := h.recipeService.recipeDetailsWithIngredientsRetriever(&w, id)
+	recipe, ingredients, err := h.recipeService.recipeDetailsWithIngredientsRetriever(&w, id)
 
 	w.Header().Set("Content-Type", "application/json")
 	resp := RecipeWithIngredients{Recipe: recipe, Ingredients: ingredients}
@@ -177,7 +177,7 @@ func (h *RecipeHandler) ShoppingListHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	err, shoppingList := h.recipeService.shoppingListRetriever(&w, recipeID, haveIngredientIDs)
+	shoppingList, err := h.recipeService.shoppingListRetriever(&w, recipeID, haveIngredientIDs)
 	if err != nil {
 		log.Printf("Error: %v", err)
 		return

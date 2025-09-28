@@ -20,7 +20,7 @@ func NewIngredientService(db *sql.DB) *IngredientService {
 	}
 }
 
-func (s *IngredientService) ingredientsCounter(w *http.ResponseWriter, search, category string) (error, int) {
+func (s *IngredientService) ingredientsCounter(w *http.ResponseWriter, search, category string) (int, error) {
 	sqlCountQuery, args := s.buildIngredientCountQuery(search, category)
 
 	var total int
@@ -28,20 +28,20 @@ func (s *IngredientService) ingredientsCounter(w *http.ResponseWriter, search, c
 	if err != nil {
 		log.Printf("Counting Query: %s", sqlCountQuery)
 		http.Error(*w, "Data scanning error", http.StatusInternalServerError)
-		return errors.New("Data scanning error"), 0
+		return 0, errors.New("Data scanning error")
 	}
 
-	return nil, total
+	return total, nil
 }
 
-func (s *IngredientService) ingredientsRetriever(w *http.ResponseWriter, search, category, sort, order string, limit, offset int) (error, []Ingredient) {
+func (s *IngredientService) ingredientsRetriever(w *http.ResponseWriter, search, category, sort, order string, limit, offset int) ([]Ingredient, error) {
 	sqlQuery, args := s.buildIngredientQuery(search, category, sort, order, limit, offset)
 
 	rows, err := s.db.Query(sqlQuery, args...)
 	if err != nil {
 		log.Printf("Query: %s", sqlQuery)
 		http.Error(*w, "Database error", http.StatusInternalServerError)
-		return errors.New("Database error"), nil
+		return nil, errors.New("Database error")
 	}
 	defer rows.Close()
 
@@ -51,12 +51,12 @@ func (s *IngredientService) ingredientsRetriever(w *http.ResponseWriter, search,
 		err = rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.Category, &ingredient.Calories, &ingredient.Description)
 		if err != nil {
 			http.Error(*w, "Data scanning error", http.StatusInternalServerError)
-			return errors.New("Data scanning error"), nil
+			return nil, errors.New("Data scanning error")
 		}
 		ingredients = append(ingredients, ingredient)
 	}
 
-	return nil, ingredients
+	return ingredients, nil
 }
 
 func (s *IngredientService) buildIngredientCountQuery(search, category string) (string, []interface{}) {
@@ -117,7 +117,7 @@ func (s *IngredientService) buildIngredientQuery(search, category, sort, order s
 	return query, args
 }
 
-func (s *IngredientService) ingredientDetailsWithRecipesRetriever(w *http.ResponseWriter, ingredientID int) (error, Ingredient, []recipes.Recipe) {
+func (s *IngredientService) ingredientDetailsWithRecipesRetriever(w *http.ResponseWriter, ingredientID int) (Ingredient, []recipes.Recipe, error) {
 	query := `
         SELECT
             i.id, i.name, i.category, i.calories_per_100g, i.description,
@@ -137,7 +137,7 @@ func (s *IngredientService) ingredientDetailsWithRecipesRetriever(w *http.Respon
 	rows, err := s.db.Query(query, ingredientID)
 	if err != nil {
 		http.Error(*w, "Database query error", http.StatusInternalServerError)
-		return errors.New("Database query error"), Ingredient{}, nil
+		return Ingredient{}, nil, errors.New("Database query error")
 	}
 	defer rows.Close()
 
@@ -194,8 +194,8 @@ func (s *IngredientService) ingredientDetailsWithRecipesRetriever(w *http.Respon
 
 	if !foundIngredient {
 		http.Error(*w, "Ingredient not found", http.StatusNotFound)
-		return errors.New("Ingredient not found"), Ingredient{}, nil
+		return Ingredient{}, nil, errors.New("Ingredient not found")
 	}
 
-	return nil, ingredient, associatedRecipes
+	return ingredient, associatedRecipes, nil
 }

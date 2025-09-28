@@ -19,26 +19,26 @@ func NewRecipeService(db *sql.DB) *RecipeService {
 	}
 }
 
-func (s *RecipeService) recipesCounter(w *http.ResponseWriter, search, category, difficulty string, maxTime int) (error, int) {
+func (s *RecipeService) recipesCounter(w *http.ResponseWriter, search, category, difficulty string, maxTime int) (int, error) {
 	sqlCountQuery, args := s.buildRecipeCountQuery(search, category, difficulty, maxTime)
 
 	var total int
 	err := s.db.QueryRow(sqlCountQuery, args...).Scan(&total)
 	if err != nil {
 		http.Error(*w, "Data scanning error", http.StatusInternalServerError)
-		return err, 0
+		return 0, err
 	}
 
-	return nil, total
+	return total, nil
 }
 
-func (s *RecipeService) recipesRetriever(w *http.ResponseWriter, search, category, difficulty, sort, order string, maxTime, limit, offset int) (error, []Recipe) {
+func (s *RecipeService) recipesRetriever(w *http.ResponseWriter, search, category, difficulty, sort, order string, maxTime, limit, offset int) ([]Recipe, error) {
 	sqlQuery, args := s.buildRecipeQuery(search, category, difficulty, sort, order, maxTime, limit, offset)
 
 	rows, err := s.db.Query(sqlQuery, args...)
 	if err != nil {
 		http.Error(*w, "Database error", http.StatusInternalServerError)
-		return errors.New(""), nil
+		return nil, errors.New("Database error")
 	}
 	defer rows.Close()
 
@@ -48,12 +48,12 @@ func (s *RecipeService) recipesRetriever(w *http.ResponseWriter, search, categor
 		err = rows.Scan(&recipe.ID, &recipe.Name, &recipe.Category, &recipe.PrepTimeMinutes, &recipe.CookTimeMinutes, &recipe.Servings, &recipe.Difficulty, &recipe.Instructions, &recipe.Description)
 		if err != nil {
 			http.Error(*w, "Data scanning error", http.StatusInternalServerError)
-			return errors.New(""), nil
+			return nil, errors.New("Data scanning error")
 		}
 		recipes = append(recipes, recipe)
 	}
 
-	return nil, recipes
+	return recipes, nil
 }
 
 func (s *RecipeService) buildRecipeCountQuery(search, category, difficulty string, maxTime int) (string, []interface{}) {
@@ -142,7 +142,7 @@ func (s *RecipeService) buildRecipeQuery(search, category, difficulty, sort, ord
 	return query, args
 }
 
-func (s *RecipeService) recipeDetailsWithIngredientsRetriever(w *http.ResponseWriter, id int) (error, Recipe, []IngredientWithQuantity) {
+func (s *RecipeService) recipeDetailsWithIngredientsRetriever(w *http.ResponseWriter, id int) (Recipe, []IngredientWithQuantity, error) {
 	var recipe Recipe
 	err := s.db.QueryRow(`
 		SELECT id, name, category, prep_time_minutes, cook_time_minutes, servings, difficulty, instructions, description 
@@ -151,10 +151,10 @@ func (s *RecipeService) recipeDetailsWithIngredientsRetriever(w *http.ResponseWr
 			&recipe.Servings, &recipe.Difficulty, &recipe.Instructions, &recipe.Description)
 	if err == sql.ErrNoRows {
 		http.Error(*w, "Recipe not found", http.StatusNotFound)
-		return errors.New("Recipe not found"), Recipe{}, nil
+		return Recipe{}, nil, errors.New("Recipe not found")
 	} else if err != nil {
 		http.Error(*w, "Database error", http.StatusInternalServerError)
-		return errors.New("Database error"), Recipe{}, nil
+		return Recipe{}, nil, errors.New("Database error")
 	}
 
 	rows, err := s.db.Query(`
@@ -164,10 +164,10 @@ func (s *RecipeService) recipeDetailsWithIngredientsRetriever(w *http.ResponseWr
 		WHERE ri.recipe_id = ?`, id)
 	if err == sql.ErrNoRows {
 		http.Error(*w, "Recipe ingredients not found", http.StatusNotFound)
-		return errors.New("Recipe ingredients not found"), Recipe{}, nil
+		return Recipe{}, nil, errors.New("Recipe ingredients not found")
 	} else if err != nil {
 		http.Error(*w, "Database error", http.StatusInternalServerError)
-		return errors.New("Database error"), Recipe{}, nil
+		return Recipe{}, nil, errors.New("Database error")
 	}
 	defer rows.Close()
 
@@ -177,19 +177,19 @@ func (s *RecipeService) recipeDetailsWithIngredientsRetriever(w *http.ResponseWr
 		err := rows.Scan(&ing.IngredientID, &ing.Name, &ing.Quantity, &ing.Unit, &ing.Notes)
 		if err != nil {
 			http.Error(*w, "Data scanning error", http.StatusInternalServerError)
-			return errors.New("Data scanning error"), Recipe{}, nil
+			return Recipe{}, nil, errors.New("Data scanning error")
 		}
 		ingredients = append(ingredients, ing)
 	}
 	if err = rows.Err(); err != nil {
 		http.Error(*w, "Data scanning error", http.StatusInternalServerError)
-		return errors.New("Data scanning error"), Recipe{}, nil
+		return Recipe{}, nil, errors.New("Data scanning error")
 	}
 
-	return nil, recipe, ingredients
+	return recipe, ingredients, nil
 }
 
-func (s *RecipeService) matchedRecipesRetriever(w *http.ResponseWriter, matchType string, ingredientIDs []int, limit int) (error, []MatchedRecipe) {
+func (s *RecipeService) matchedRecipesRetriever(w *http.ResponseWriter, matchType string, ingredientIDs []int, limit int) ([]MatchedRecipe, error) {
 	sqlQuery := ""
 	args := []interface{}{}
 
@@ -235,7 +235,7 @@ func (s *RecipeService) matchedRecipesRetriever(w *http.ResponseWriter, matchTyp
 	if err != nil {
 		log.Printf("SQL Error: %v", err)
 		http.Error(*w, "Database error", http.StatusInternalServerError)
-		return errors.New("Database error"), nil
+		return nil, errors.New("Database error")
 	}
 	defer rows.Close()
 
@@ -258,15 +258,15 @@ func (s *RecipeService) matchedRecipesRetriever(w *http.ResponseWriter, matchTyp
 		matchedRecipe.MatchScore = float32(matchedRecipe.MatchedIngredientsCount) / float32(matchedRecipe.TotalIngredientsCount)
 		if err != nil {
 			http.Error(*w, "Database scanning error", http.StatusInternalServerError)
-			return errors.New("Database scanning error"), nil
+			return nil, errors.New("Database scanning error")
 		}
 		matchedRecipes = append(matchedRecipes, matchedRecipe)
 	}
 
-	return nil, matchedRecipes
+	return matchedRecipes, nil
 }
 
-func (s *RecipeService) shoppingListRetriever(w *http.ResponseWriter, recipeID int, haveIngredientIDs map[int]struct{}) (error, []IngredientWithQuantity) {
+func (s *RecipeService) shoppingListRetriever(w *http.ResponseWriter, recipeID int, haveIngredientIDs map[int]struct{}) ([]IngredientWithQuantity, error) {
 	query := `
 		SELECT
 			ri.ingredient_id,
@@ -285,7 +285,7 @@ func (s *RecipeService) shoppingListRetriever(w *http.ResponseWriter, recipeID i
 	rows, err := s.db.Query(query, recipeID)
 	if err != nil {
 		http.Error(*w, "Database query error", http.StatusInternalServerError)
-		return errors.New("Database query error"), nil
+		return nil, errors.New("Database query error")
 	}
 	defer rows.Close()
 
@@ -313,8 +313,8 @@ func (s *RecipeService) shoppingListRetriever(w *http.ResponseWriter, recipeID i
 
 	if !recipeFound {
 		http.Error(*w, "Recipe not found", http.StatusNotFound)
-		return errors.New("Recipe not found"), nil
+		return nil, errors.New("Recipe not found")
 	}
 
-	return nil, shoppingList
+	return shoppingList, nil
 }

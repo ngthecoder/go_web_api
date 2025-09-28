@@ -52,7 +52,7 @@ func (h *IngredientHandler) AllIngredientsHandler(w http.ResponseWriter, r *http
 
 	offset := (page - 1) * limit
 
-	err, total := h.ingredientService.ingredientsCounter(&w, search, category)
+	total, err := h.ingredientService.ingredientsCounter(&w, search, category)
 	if err != nil {
 		log.Printf("Error: %v", err)
 		return
@@ -61,7 +61,7 @@ func (h *IngredientHandler) AllIngredientsHandler(w http.ResponseWriter, r *http
 	totalPages := (total + limit - 1) / limit
 	hasNext := page < totalPages
 
-	err, ingredients := h.ingredientService.ingredientsRetriever(&w, search, category, sort, order, limit, offset)
+	ingredients, err := h.ingredientService.ingredientsRetriever(&w, search, category, sort, order, limit, offset)
 	if err != nil {
 		log.Printf("Error: %v", err)
 		return
@@ -91,7 +91,7 @@ func (h *IngredientHandler) IngredientDetailsHandler(w http.ResponseWriter, r *h
 		return
 	}
 
-	err, ingredient, associatedRecipes := h.ingredientService.ingredientDetailsWithRecipesRetriever(&w, ingredientID)
+	ingredient, associatedRecipes, err := h.ingredientService.ingredientDetailsWithRecipesRetriever(&w, ingredientID)
 	if err != nil {
 		log.Printf("Error: %v", err)
 		return

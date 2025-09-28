@@ -40,6 +40,13 @@ func NewInternalServerError(message string, err error) *HTTPError {
 	}
 }
 
+func NewConflictError(message string) *HTTPError {
+	return &HTTPError{
+		StatusCode: http.StatusConflict,
+		Message:    message,
+	}
+}
+
 func WriteHTTPError(w http.ResponseWriter, err error) {
 	if httpErr, ok := err.(*HTTPError); ok {
 		http.Error(w, httpErr.Message, httpErr.StatusCode)

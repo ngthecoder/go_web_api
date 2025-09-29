@@ -12,6 +12,7 @@ A web application using Go backend API and Next.js frontend with user authentica
 - **Frontend**: Next.js 15.5.0 + TypeScript + Tailwind CSS
 - **Database**: SQLite3 (for local development)
 - **Authentication**: JWT tokens with Argon2 password hashing
+- **Deployment**: Docker + AWS ECS with Terraform
 
 ## Prerequisites
 Before starting, ensure the following are installed:
@@ -182,6 +183,10 @@ users (Users)              user_liked_recipes (User Preferences)      │
 | GET | `/recipes/shopping-list/{id}` | Generate shopping list for recipe | `id` | `have_ingredients` | No |
 | GET | `/categories` | Get category statistics | - | - | No |
 | GET | `/stats` | Get overall statistics | - | - | No |
+| GET | `/user/profile` | Get user profile | - | - | Yes |
+| GET | `/user/liked-recipes` | Get user's liked recipes | - | - | Yes |
+| POST | `/user/liked-recipes/add` | Add recipe to liked list | recipe_id | - | Yes |
+| DELETE | `/user/liked-recipes/{id}` | Remove recipe from liked list | `id` | - | Yes |
 
 #### Authentication Endpoints
 
@@ -311,6 +316,82 @@ GET /api/recipes/shopping-list/5?have_ingredients=1,4
 }
 ```
 
+#### User Profile Endpoints
+
+**7: GET /api/user/profile**
+```bash
+GET /api/user/profile
+Authorization: Bearer {token}
+```
+
+Response:
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "username": "johndoe",
+  "email": "john@example.com",
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:30:00Z"
+}
+```
+
+**8: GET /api/user/liked-recipes**
+```bash
+GET /api/user/liked-recipes
+Authorization: Bearer {token}
+```
+
+Response:
+```json
+{
+  "liked_recipes": [
+    {
+      "id": 1,
+      "name": "Scrambled Eggs",
+      "category": "Breakfast",
+      "prep_time_minutes": 5,
+      "cook_time_minutes": 5,
+      "servings": 2,
+      "difficulty": "easy",
+      "instructions": "1. Crack eggs into bowl...",
+      "description": "Fluffy and creamy scrambled eggs"
+    }
+  ],
+  "total": 1
+}
+```
+
+**9: POST /api/user/liked-recipes/add**
+```bash
+POST /api/user/liked-recipes/add
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "recipe_id": 1
+}
+```
+
+Response:
+```json
+{
+  "message": "Recipe added to liked list"
+}
+```
+
+**10: DELETE /api/user/liked-recipes/{id}**
+```bash
+DELETE /api/user/liked-recipes/1
+Authorization: Bearer {token}
+```
+
+Response:
+```json
+{
+  "message": "Recipe removed from liked list"
+}
+```
+
 ## Frontend Design (Next.js)
 
 ### Page Details
@@ -368,6 +449,14 @@ GET /api/recipes/shopping-list/5?have_ingredients=1,4
 4. Access profile page to view account information
 5. Logout functionality available
 
+#### Flow 3: User Profile and Liked Recipes
+1. User logs into their account
+2. Navigates to profile page to view account information
+3. Browses through recipe catalog
+4. Adds interesting recipes to their liked list
+5. Views their liked recipes collection
+6. Removes recipes they're no longer interested in
+
 ### Project Structure
 ```
 frontend/
@@ -421,6 +510,7 @@ frontend/
 4. **Shopping Lists**: Generate shopping lists for recipes based on available ingredients
 5. **User Authentication**: Secure user registration and login system
 6. **User Profiles**: Personal user accounts with profile management
+7. **Liked Recipes**: Users can save and manage their favorite recipes
 
 ### User Stories
 1. **Browse Recipes**: Users can search and filter recipes by category, difficulty, cooking time
@@ -428,8 +518,10 @@ frontend/
 3. **View Details**: Users can view detailed recipe instructions and ingredient requirements
 4. **User Registration**: New users can create accounts securely
 5. **User Login**: Existing users can log in to access their profiles
-6. **Generate Shopping Lists**: Users can create shopping lists for recipes they want to make
-7. **Bidirectional Navigation**: Navigate between ingredients and recipes seamlessly
+6. **User Profile Management**: Users can view their profile information
+7. **Liked Recipes**: Users can add and remove recipes from their liked list
+8. **Generate Shopping Lists**: Users can create shopping lists for recipes they want to make
+9. **Bidirectional Navigation**: Navigate between ingredients and recipes seamlessly
 
 ### Use Cases
 
@@ -447,6 +539,14 @@ frontend/
 4. User clicks on recipe to view full instructions
 5. User can generate shopping list for missing ingredients
 
+**Scenario 3: User Profile and Liked Recipes**
+1. User logs into their account
+2. Navigates to profile page to view account information
+3. Browses through recipe catalog
+4. Adds interesting recipes to their liked list
+5. Views their liked recipes collection
+6. Removes recipes they're no longer interested in
+
 ## Team Development Workflow
 
 ### Backend Tasks
@@ -462,6 +562,9 @@ frontend/
 - User-specific features (liked recipes, user preferences)
 - API documentation server
 - Rate limiting and advanced security features
+- Custom error handling with HTTP status codes
+- Clean service layer architecture
+- Input validation and sanitization
 
 ### Frontend Tasks (Next.js + TypeScript)
 - Next.js project setup with TypeScript
@@ -486,6 +589,285 @@ frontend/
 - XSS protection
 - Performance optimization and caching
 
+## Docker Deployment
+
+### Docker Configuration
+
+#### Backend Dockerfile
+```dockerfile
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o main .
+
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates sqlite
+
+WORKDIR /root/
+
+COPY --from=builder /app/main .
+
+EXPOSE 8000
+
+CMD ["./main"]
+```
+
+#### Frontend Dockerfile
+```dockerfile
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY . .
+RUN npm run build
+
+FROM node:18-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT 3000
+
+CMD ["node", "server.js"]
+```
+
+#### Docker Compose
+```yaml
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./data:/root/data
+    networks:
+      - recipe-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - recipe-network
+
+networks:
+  recipe-network:
+    driver: bridge
+
+volumes:
+  recipe-data:
+```
+
+### Local Docker Development
+```bash
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Run in background
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+## AWS Deployment Strategy
+
+### Infrastructure Architecture
+
+#### AWS Services Used
+- **ECS Fargate**: Container orchestration for scalable deployment
+- **Application Load Balancer**: Traffic distribution and SSL termination
+- **RDS PostgreSQL**: Production database (migrated from SQLite)
+- **ECR**: Container image registry
+- **VPC**: Network isolation and security
+- **Route 53**: DNS management
+- **Certificate Manager**: SSL certificates
+- **CloudWatch**: Monitoring and logging
+
+#### Deployment Architecture Diagram
+```
+Internet → Route 53 → ALB → ECS Fargate Cluster
+                      │
+                      ├── Frontend Service (3000)
+                      └── Backend Service (8000)
+                              │
+                              └── RDS PostgreSQL
+```
+
+### Terraform Configuration
+
+#### Directory Structure
+```
+terraform/
+├── main.tf                 # Main infrastructure
+├── variables.tf            # Input variables
+├── outputs.tf              # Output values
+├── vpc.tf                  # VPC and networking
+├── ecs.tf                  # ECS cluster and services
+├── rds.tf                  # Database configuration
+├── alb.tf                  # Load balancer
+├── ecr.tf                  # Container registry
+├── iam.tf                  # IAM roles and policies
+├── security-groups.tf      # Security group rules
+└── terraform.tfvars       # Variable values (not committed)
+```
+
+#### Key Infrastructure Components
+
+**VPC and Networking**
+- Multi-AZ VPC with public and private subnets
+- Internet Gateway and NAT Gateways
+- Route tables and security groups
+
+**ECS Fargate Cluster**
+- Auto-scaling container services
+- Service discovery and load balancing
+- Blue-green deployment capability
+
+**RDS PostgreSQL**
+- Multi-AZ deployment for high availability
+- Automated backups and monitoring
+- Security group isolation
+
+**Application Load Balancer**
+- SSL termination with ACM certificates
+- Path-based routing to frontend/backend
+- Health checks and auto-scaling triggers
+
+### Database Migration
+
+#### SQLite to PostgreSQL Migration
+```sql
+-- PostgreSQL schema creation
+CREATE TABLE ingredients (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(100) NOT NULL,
+    calories_per_100g INTEGER NOT NULL,
+    description TEXT
+);
+
+CREATE TABLE recipes (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(100) NOT NULL,
+    prep_time_minutes INTEGER NOT NULL,
+    cook_time_minutes INTEGER NOT NULL,
+    servings INTEGER NOT NULL,
+    difficulty VARCHAR(50) NOT NULL,
+    instructions TEXT NOT NULL,
+    description TEXT
+);
+
+CREATE TABLE recipe_ingredients (
+    recipe_id INTEGER REFERENCES recipes(id),
+    ingredient_id INTEGER REFERENCES ingredients(id),
+    quantity DECIMAL NOT NULL,
+    unit VARCHAR(50) NOT NULL,
+    notes TEXT,
+    PRIMARY KEY (recipe_id, ingredient_id)
+);
+
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_liked_recipes (
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    recipe_id INTEGER REFERENCES recipes(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, recipe_id)
+);
+```
+
+### Deployment Pipeline
+
+#### CI/CD Workflow
+1. **Code Push**: Developer pushes to main branch
+2. **Build**: GitHub Actions builds Docker images
+3. **Test**: Run automated tests and security scans
+4. **Push**: Upload images to ECR
+5. **Deploy**: Terraform applies infrastructure changes
+6. **Update**: ECS updates services with new images
+7. **Verify**: Health checks confirm successful deployment
+
+#### Environment Configuration
+```bash
+# Production environment variables
+JWT_SECRET=${RANDOM_SECRET_FROM_AWS_SECRETS_MANAGER}
+DATABASE_URL=${RDS_CONNECTION_STRING}
+REDIS_URL=${ELASTICACHE_ENDPOINT}
+ALLOWED_ORIGINS=${FRONTEND_DOMAIN}
+```
+
+### Monitoring and Operations
+
+#### CloudWatch Metrics
+- Container CPU and memory utilization
+- Database connection counts and query performance
+- Application response times and error rates
+- Custom business metrics (user registrations, recipe views)
+
+#### Alerting
+- High error rate alerts
+- Database performance degradation
+- Container health check failures
+- SSL certificate expiration warnings
+
+### Cost Optimization
+
+#### Resource Sizing
+- **ECS Tasks**: Start with 0.25 vCPU, 512 MB memory
+- **RDS Instance**: db.t3.micro for development, db.t3.small for production
+- **Auto Scaling**: Scale based on CPU utilization and request count
+
+#### Cost Monitoring
+- AWS Cost Explorer for spend analysis
+- Resource tagging for cost allocation
+- Scheduled scaling for predictable traffic patterns
+
 ## Troubleshooting
 
 ### Common Issues
@@ -504,17 +886,62 @@ go run main.go
 # Ensure frontend origin is whitelisted
 ```
 
-**4. JWT Token Issues**
+**3. JWT Token Issues**
 ```bash
 # Check JWT_SECRET environment variable
 # Ensure token is properly stored in localStorage
 # Verify token format in Authorization header
 ```
 
-## Production Environment (Incomplete)
+**4. Docker Build Issues**
 ```bash
-# Docker setup is configured but not fully tested
-docker compose up --build
+# Clear Docker cache
+docker system prune
+
+# Rebuild without cache
+docker-compose build --no-cache
+
+# Check container logs
+docker-compose logs backend
+```
+
+**5. AWS Deployment Issues**
+```bash
+# Check ECS service status
+aws ecs describe-services --cluster recipe-cluster --services recipe-backend
+
+# View CloudWatch logs
+aws logs tail /ecs/recipe-backend --follow
+
+# Verify security group rules
+aws ec2 describe-security-groups --group-ids sg-xxxxx
+```
+
+## Production Environment
+
+### Local Development with Docker
+```bash
+# Start all services
+docker-compose up --build
+
+# Development with hot reload (requires volume mounts)
+docker-compose -f docker-compose.dev.yml up
+```
+
+### AWS Production Deployment
+```bash
+# Initialize Terraform
+cd terraform
+terraform init
+
+# Plan deployment
+terraform plan
+
+# Deploy infrastructure
+terraform apply
+
+# Deploy application
+./scripts/deploy.sh production
 ```
 
 ## Future Enhancements
@@ -523,11 +950,15 @@ docker compose up --build
 1. **User Preferences**: Save liked recipes and dietary restrictions
 2. **Mobile App**: React Native mobile application
 3. **Recipe Ratings**: User rating and review system
+4. **Social Features**: Share recipes and follow other users
+5. **Meal Planning**: Weekly meal planning with shopping lists
+6. **Nutrition Tracking**: Detailed nutritional analysis
 
 ### Technical Improvements
-1. **Database Migration**: Move to PostgreSQL for production
-2. **Caching**: Implement Redis for session management and caching
-3. **Testing**: Unit tests and integration tests
+1. **Caching**: Implement Redis for session management and caching
+2. **Search**: Elasticsearch for advanced recipe search
+3. **Testing**: Comprehensive unit tests and integration tests
 4. **CI/CD**: Automated testing and deployment pipeline
-5. **Monitoring**: Application monitoring and logging
+5. **Monitoring**: Application monitoring and logging with DataDog
 6. **API Documentation**: Interactive API documentation with Swagger
+7. **Performance**: Database query optimization and CDN integration

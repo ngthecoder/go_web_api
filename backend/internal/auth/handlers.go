@@ -37,6 +37,27 @@ func (h *AuthHandler) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func (h *AuthHandler) OptionalAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+
+		if authHeader == "" {
+			next(w, r)
+			return
+		}
+
+		claims, err := h.service.validateJWT(authHeader)
+		if err != nil {
+			next(w, r)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), "user_id", claims.UserID)
+		r = r.WithContext(ctx)
+		next(w, r)
+	}
+}
+
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

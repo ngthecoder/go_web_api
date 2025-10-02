@@ -28,6 +28,7 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(userProfile)
 }
 
@@ -40,6 +41,7 @@ func (h *UserHandler) GetLikedRecipes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(recipesList)
 }
 
@@ -96,6 +98,104 @@ func (h *UserHandler) RemoveLikedRecipe(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Recipe removed from liked list"})
+}
+
+func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID := r.Context().Value("user_id").(string)
+
+	var request UpdateProfileRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid JSON"))
+		return
+	}
+
+	if request.Username == "" || request.Email == "" {
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Username and email are required"))
+		return
+	}
+
+	updatedProfile, err := h.userService.updateUserProfile(userID, request.Username, request.Email)
+	if err != nil {
+		errors.WriteHTTPError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(updatedProfile)
+}
+
+func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID := r.Context().Value("user_id").(string)
+
+	var request ChangePasswordRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid JSON"))
+		return
+	}
+
+	if request.CurrentPassword == "" || request.NewPassword == "" {
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Current password and new password are required"))
+		return
+	}
+
+	if len(request.NewPassword) < 6 {
+		errors.WriteHTTPError(w, errors.NewBadRequestError("New password must be at least 6 characters"))
+		return
+	}
+
+	err = h.userService.changePassword(userID, request.CurrentPassword, request.NewPassword)
+	if err != nil {
+		errors.WriteHTTPError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Password updated successfully"})
+}
+
+func (h *UserHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID := r.Context().Value("user_id").(string)
+
+	var request DeleteAccountRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid JSON"))
+		return
+	}
+
+	if request.Password == "" {
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Password is required"))
+		return
+	}
+
+	err = h.userService.deleteAccount(userID, request.Password)
+	if err != nil {
+		errors.WriteHTTPError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Account deleted successfully"})
 }

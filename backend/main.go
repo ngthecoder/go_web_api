@@ -868,6 +868,9 @@ func main() {
 	http.HandleFunc("/api/user/liked-recipes", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.GetLikedRecipes))))
 	http.HandleFunc("/api/user/liked-recipes/add", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.AddLikedRecipe))))
 	http.HandleFunc("/api/user/liked-recipes/", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.RemoveLikedRecipe))))
+	http.HandleFunc("/api/user/profile/update", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.UpdateProfile))))
+	http.HandleFunc("/api/user/password", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.ChangePassword))))
+	http.HandleFunc("/api/user/account", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.DeleteAccount))))
 
 	http.HandleFunc("/api/recipes", loggingMiddleware(enableCORS(authHandler.OptionalAuthMiddleware(recipesHandler.AllRecipesHandler))))
 	http.HandleFunc("/api/recipes/", loggingMiddleware(enableCORS(authHandler.OptionalAuthMiddleware(recipesHandler.RecipeDetailHandler))))

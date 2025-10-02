@@ -1,6 +1,9 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import LikeButton from '@/components/LikeButton';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Ingredient {
   id: number;
@@ -18,9 +21,11 @@ interface MatchedRecipe {
   matched_ingredients_count: number;
   total_ingredients_count: number;
   match_score: number;
+  is_liked: boolean;
 }
 
 export default function FindRecipesPage() {
+  const { token } = useAuth();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<number[]>([]);
   const [matchedRecipes, setMatchedRecipes] = useState<MatchedRecipe[]>([]);
@@ -48,8 +53,15 @@ export default function FindRecipesPage() {
     setLoading(true);
     try {
       const ingredientIds = selectedIngredients.join(',');
+
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(
-        `http://localhost:8000/api/recipes/find-by-ingredients?ingredients=${ingredientIds}&match_type=partial&limit=20`
+        `http://localhost:8000/api/recipes/find-by-ingredients?ingredients=${ingredientIds}&match_type=partial&limit=20`,
+        { headers }
       );
       const data = await response.json();
       setMatchedRecipes(data);
@@ -67,6 +79,16 @@ export default function FindRecipesPage() {
     return selectedIngredients
       .map(id => ingredients.find(ing => ing.id === id)?.name)
       .filter(Boolean);
+  };
+
+  const handleLikeChange = (recipeId: number, isLiked: boolean) => {
+    setMatchedRecipes(prev => 
+      prev.map(recipe => 
+        recipe.id === recipeId 
+          ? { ...recipe, is_liked: isLiked }
+          : recipe
+      )
+    );
   };
 
   return (
@@ -128,11 +150,11 @@ export default function FindRecipesPage() {
             ))}
           </div>
         </div>
-        
+
         <div>
           <h2 className="text-2xl font-semibold mb-4">
             Matched Recipes 
-            {matchedRecipes.length > 0 && `(${matchedRecipes.length} found)`}
+            {matchedRecipes.length > 0 && ` (${matchedRecipes.length} found)`}
           </h2>
 
           {matchedRecipes.length === 0 && !loading && selectedIngredients.length > 0 && (
@@ -149,33 +171,55 @@ export default function FindRecipesPage() {
 
           <div className="space-y-4">
             {matchedRecipes.map(recipe => (
-              <Link href={`/recipes/${recipe.id}`} key={recipe.id}>
-                <div className="border rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer mb-3">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-semibold">{recipe.name}</h3>
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-green-600">
-                        Match: {Math.round(recipe.match_score * 100)}%
+              <div key={recipe.id} className="border rounded-lg p-4 hover:shadow-lg transition-shadow relative">
+                <div className="absolute top-4 right-4">
+                  <LikeButton 
+                    recipeId={recipe.id}
+                    recipeName={recipe.name}
+                    initialLiked={recipe.is_liked}
+                    size="medium"
+                    onLikeChange={(isLiked) => handleLikeChange(recipe.id, isLiked)}
+                  />
+                </div>
+
+                <Link href={`/recipes/${recipe.id}`}>
+                  <div className="cursor-pointer pr-12">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-xl font-semibold">{recipe.name}</h3>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-medium text-green-600">
+                          Match: {Math.round(recipe.match_score * 100)}%
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ({recipe.matched_ingredients_count}/{recipe.total_ingredients_count} ingredients)
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {recipe.matched_ingredients_count}/{recipe.total_ingredients_count} ingredients
+                      
+                      <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-green-500 h-2 rounded-full transition-all"
+                          style={{ width: `${recipe.match_score * 100}%` }}
+                        ></div>
                       </div>
                     </div>
+                    
+                    <div className="flex justify-between items-center text-sm text-gray-600">
+                      <span>{recipe.category}</span>
+                      <span>{recipe.prep_time_minutes + recipe.cook_time_minutes} min</span>
+                      <span className={`px-2 py-1 rounded ${
+                        recipe.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
+                        recipe.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {recipe.difficulty}
+                      </span>
+                    </div>
                   </div>
-                  
-                  <div className="flex justify-between items-center text-sm text-gray-600">
-                    <span>{recipe.category}</span>
-                    <span>{recipe.prep_time_minutes + recipe.cook_time_minutes} min</span>
-                    <span className={`px-2 py-1 rounded ${
-                      recipe.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
-                      recipe.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {recipe.difficulty}
-                    </span>
-                  </div>
-                </div>
-              </Link>
+                </Link>
+              </div>
             ))}
           </div>
         </div>

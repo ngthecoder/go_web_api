@@ -1,6 +1,9 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import LikeButton from '@/components/LikeButton';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Recipe {
   id: number;
@@ -11,6 +14,7 @@ interface Recipe {
   servings: number;
   difficulty: string;
   description: string;
+  is_liked: boolean;
 }
 
 interface RecipeResponse {
@@ -23,6 +27,8 @@ interface RecipeResponse {
 }
 
 export default function HomePage() {
+  const { token } = useAuth();
+  
   const [recipeData, setRecipeData] = useState<RecipeResponse>({
     recipes: [],
     total: 0,
@@ -55,7 +61,14 @@ export default function HomePage() {
       params.set('page', currentPage.toString());
       params.set('limit', itemsPerPage.toString());
       
-      const response = await fetch(`http://localhost:8000/api/recipes?${params}`);
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`http://localhost:8000/api/recipes?${params}`, {
+        headers
+      });
       const data = await response.json();
       setRecipeData(data);
     } catch (error) {
@@ -66,7 +79,18 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchRecipes();
-  }, [searchTerm, selectedCategory, selectedDifficulty, maxTime, sortBy, sortOrder, currentPage, itemsPerPage]);
+  }, [searchTerm, selectedCategory, selectedDifficulty, maxTime, sortBy, sortOrder, currentPage, itemsPerPage, token]);
+
+  const handleLikeChange = (recipeId: number, isLiked: boolean) => {
+    setRecipeData(prev => ({
+      ...prev,
+      recipes: prev.recipes.map(recipe => 
+        recipe.id === recipeId 
+          ? { ...recipe, is_liked: isLiked }
+          : recipe
+      )
+    }));
+  };
 
   return (
     <div className="container mx-auto p-4">
@@ -172,29 +196,41 @@ export default function HomePage() {
         <div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {recipeData.recipes?.map(recipe => (
-              <Link href={`/recipes/${recipe.id}`} key={recipe.id}>
-                <div className="border rounded-lg p-4 shadow hover:shadow-lg transition-shadow cursor-pointer">
-                  <h3 className="text-xl font-semibold mb-2">{recipe.name}</h3>
-                  <p className="text-gray-600 mb-2 text-sm line-clamp-2">{recipe.description}</p>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <p>Category: {recipe.category}</p>
-                    <p>Prep: {recipe.prep_time_minutes}min | Cook: {recipe.cook_time_minutes}min</p>
-                    <p>Serves {recipe.servings}</p>
-                  </div>
-                  <div className="mt-3 flex justify-between items-center">
-                    <span className={`inline-block px-2 py-1 rounded text-sm ${
-                      recipe.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
-                      recipe.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {recipe.difficulty}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      Total {recipe.prep_time_minutes + recipe.cook_time_minutes}min
-                    </span>
-                  </div>
+              <div key={recipe.id} className="border rounded-lg p-4 shadow hover:shadow-lg transition-shadow relative">
+                <div className="absolute top-4 right-4 z-10">
+                  <LikeButton 
+                    recipeId={recipe.id}
+                    recipeName={recipe.name}
+                    initialLiked={recipe.is_liked}
+                    size="medium"
+                    onLikeChange={(isLiked) => handleLikeChange(recipe.id, isLiked)}
+                  />
                 </div>
-              </Link>
+
+                <Link href={`/recipes/${recipe.id}`}>
+                  <div className="cursor-pointer">
+                    <h3 className="text-xl font-semibold mb-2 pr-10">{recipe.name}</h3>
+                    <p className="text-gray-600 mb-2 text-sm line-clamp-2">{recipe.description}</p>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <p>Category: {recipe.category}</p>
+                      <p>Prep: {recipe.prep_time_minutes}min | Cook: {recipe.cook_time_minutes}min</p>
+                      <p>Serves {recipe.servings}</p>
+                    </div>
+                    <div className="mt-3 flex justify-between items-center">
+                      <span className={`inline-block px-2 py-1 rounded text-sm ${
+                        recipe.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
+                        recipe.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {recipe.difficulty}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        Total {recipe.prep_time_minutes + recipe.cook_time_minutes}min
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </div>
             ))}
           </div>
 

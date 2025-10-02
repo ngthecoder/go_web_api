@@ -10,6 +10,7 @@ type Recipe struct {
 	Difficulty      string `json:"difficulty"`
 	Instructions    string `json:"instructions"`
 	Description     string `json:"description"`
+	IsLiked         bool   `json:"is_liked"`
 }
 
 type IngredientWithQuantity struct {
@@ -38,4 +39,5 @@ type MatchedRecipe struct {
 	MatchedIngredientsCount int     `json:"matched_ingredients_count"`
 	TotalIngredientsCount   int     `json:"total_ingredients_count"`
 	MatchScore              float32 `json:"match_score"`
+	IsLiked                 bool    `json:"is_liked"`
 }

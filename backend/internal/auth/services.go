@@ -2,9 +2,7 @@ package auth
 
 import (
 	"crypto/hmac"
-	"crypto/rand"
 	"crypto/sha256"
-	"crypto/subtle"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
@@ -13,7 +11,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/crypto/argon2"
 )
 
 var (
@@ -44,7 +41,8 @@ func (s *AuthService) registerUser(registerRequest RegisterRequest) (*AuthRespon
 	}
 
 	uuid := uuid.New()
-	encodedPasswordHash, err := s.hashPassword(registerRequest.Password)
+
+	encodedPasswordHash, err := HashPassword(registerRequest.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -76,19 +74,6 @@ func (s *AuthService) userExists(email, username string) (bool, error) {
 	query := `SELECT COUNT(*) FROM users WHERE email = ? OR username = ?`
 	err := s.db.QueryRow(query, email, username).Scan(&count)
 	return count > 0, err
-}
-
-func (s *AuthService) hashPassword(password string) (string, error) {
-	salt := make([]byte, 16)
-	if _, err := rand.Read(salt); err != nil {
-		return "", err
-	}
-
-	hash := argon2.IDKey([]byte(password), salt, 3, 64*1024, 2, 16)
-
-	passwordHash := append(salt, hash...)
-
-	return base64.StdEncoding.EncodeToString(passwordHash), nil
 }
 
 func (s *AuthService) loginUser(loginRequest LoginRequest) (*AuthResponse, error) {
@@ -128,17 +113,7 @@ func (s *AuthService) verifyPassword(email string, password string) (bool, error
 		return false, err
 	}
 
-	storedDecodedPasswordHashBytes, err := base64.StdEncoding.DecodeString(storedEncodedPasswordHash)
-	if err != nil {
-		return false, err
-	}
-
-	salt := storedDecodedPasswordHashBytes[:16]
-	correctHash := storedDecodedPasswordHashBytes[16:]
-
-	hash := argon2.IDKey([]byte(password), salt, 3, 64*1024, 2, 16)
-
-	return subtle.ConstantTimeCompare(correctHash, hash) == 1, nil
+	return VerifyPasswordHash(password, storedEncodedPasswordHash)
 }
 
 func (s *AuthService) getUserByEmail(email string) (*User, error) {

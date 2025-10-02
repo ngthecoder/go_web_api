@@ -17,3 +17,14 @@ type LikedRecipeRequest struct {
 type LikedRecipeResponse struct {
 	RecipeIDs []int `json:"recipe_ids"`
 }
+type UpdateProfileRequest struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+}
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+type DeleteAccountRequest struct {
+	Password string `json:"password"`
+}

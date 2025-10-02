@@ -75,7 +75,12 @@ func (h *RecipesHandler) AllRecipesHandler(w http.ResponseWriter, r *http.Reques
 	totalPages := (total + limit - 1) / limit
 	hasNext := page < totalPages
 
-	recipes, err := h.recipesService.recipesRetriever(search, category, difficulty, sort, order, maxTime, limit, offset)
+	userID := ""
+	if userIDValue := r.Context().Value("user_id"); userIDValue != nil {
+		userID = userIDValue.(string)
+	}
+
+	recipes, err := h.recipesService.recipesRetriever(search, category, difficulty, sort, order, maxTime, limit, offset, userID)
 	if err != nil {
 		errors.WriteHTTPError(w, err)
 		return
@@ -100,7 +105,12 @@ func (h *RecipesHandler) RecipeDetailHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	recipe, ingredients, err := h.recipesService.recipeDetailsWithIngredientsRetriever(id)
+	userID := ""
+	if userIDValue := r.Context().Value("user_id"); userIDValue != nil {
+		userID = userIDValue.(string)
+	}
+
+	recipe, ingredients, err := h.recipesService.recipeDetailsWithIngredientsRetriever(id, userID)
 	if err != nil {
 		errors.WriteHTTPError(w, err)
 		return
@@ -147,7 +157,12 @@ func (h *RecipesHandler) FindRecipesByIngredientsHandler(w http.ResponseWriter, 
 		return
 	}
 
-	matchedRecipes, err := h.recipesService.matchedRecipesRetriever(matchType, ingredientIDs, limit)
+	userID := ""
+	if userIDValue := r.Context().Value("user_id"); userIDValue != nil {
+		userID = userIDValue.(string)
+	}
+
+	matchedRecipes, err := h.recipesService.matchedRecipesRetriever(matchType, ingredientIDs, limit, userID)
 	if err != nil {
 		errors.WriteHTTPError(w, err)
 		return

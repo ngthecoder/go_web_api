@@ -869,13 +869,15 @@ func main() {
 	http.HandleFunc("/api/user/liked-recipes/add", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.AddLikedRecipe))))
 	http.HandleFunc("/api/user/liked-recipes/", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.RemoveLikedRecipe))))
 
+	http.HandleFunc("/api/recipes", loggingMiddleware(enableCORS(authHandler.OptionalAuthMiddleware(recipesHandler.AllRecipesHandler))))
+	http.HandleFunc("/api/recipes/", loggingMiddleware(enableCORS(authHandler.OptionalAuthMiddleware(recipesHandler.RecipeDetailHandler))))
+	http.HandleFunc("/api/recipes/find-by-ingredients", loggingMiddleware(enableCORS(authHandler.OptionalAuthMiddleware(recipesHandler.FindRecipesByIngredientsHandler))))
+	http.HandleFunc("/api/recipes/shopping-list/", loggingMiddleware(enableCORS(recipesHandler.ShoppingListHandler)))
+
 	http.HandleFunc("/api/ingredients", loggingMiddleware(enableCORS(ingredientsHandler.AllIngredientsHandler)))
 	http.HandleFunc("/api/ingredients/", loggingMiddleware(enableCORS(ingredientsHandler.IngredientDetailsHandler)))
-	http.HandleFunc("/api/recipes", loggingMiddleware(enableCORS(recipesHandler.AllRecipesHandler)))
-	http.HandleFunc("/api/recipes/", loggingMiddleware(enableCORS(recipesHandler.RecipeDetailHandler)))
-	http.HandleFunc("/api/recipes/find-by-ingredients", loggingMiddleware(enableCORS(recipesHandler.FindRecipesByIngredientsHandler)))
+
 	http.HandleFunc("/api/categories", loggingMiddleware(enableCORS(categoriesHandler)))
-	http.HandleFunc("/api/recipes/shopping-list/", loggingMiddleware(enableCORS(recipesHandler.ShoppingListHandler)))
 	http.HandleFunc("/api/stats", loggingMiddleware(enableCORS(statsHandler)))
 
 	log.Fatal(http.ListenAndServe(":8000", nil))

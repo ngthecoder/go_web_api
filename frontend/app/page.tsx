@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import LikeButton from '@/components/LikeButton';
 import { useAuth } from '@/contexts/AuthContext';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface Recipe {
   id: number;
@@ -66,7 +67,7 @@ export default function HomePage() {
         headers['Authorization'] = `Bearer ${token}`;
       }
       
-      const response = await fetch(`http://localhost:8000/api/recipes?${params}`, {
+      const response = await fetch(`${API_ENDPOINTS.recipes}?${params}`, {
         headers
       });
       const data = await response.json();

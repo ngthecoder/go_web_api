@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface Ingredient {
   id: number;
@@ -48,7 +49,7 @@ export default function IngredientsPage() {
       params.set('page', currentPage.toString());
       params.set('limit', itemsPerPage.toString());
       
-      const response = await fetch(`http://localhost:8000/api/ingredients?${params}`);
+      const response = await fetch(`${API_ENDPOINTS.ingredients}?${params}`);
       const data = await response.json();
       setIngredientData(data);
     } catch (error) {

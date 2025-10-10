@@ -1,8 +1,9 @@
 import { AuthResponse, LoginRequest, RegisterRequest } from "./types"
+import { API_ENDPOINTS } from "./api-config"
 
 export async function registerUser(data: RegisterRequest):Promise<AuthResponse> {
     try {
-        const response = await fetch("http://localhost:8000/api/auth/register", {
+        const response = await fetch(API_ENDPOINTS.register, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -16,20 +17,19 @@ export async function registerUser(data: RegisterRequest):Promise<AuthResponse> 
         }
 
         const responseJSON: AuthResponse = await response.json()
-
         return responseJSON
     } catch(error) {
         if (error instanceof Error) {
             throw error
         } else {
-            throw new Error("Network error occured")
+            throw new Error("Network error occurred")
         }
     }
 }
 
 export async function loginUser(data: LoginRequest):Promise<AuthResponse> {
     try {
-        const response = await fetch("http://localhost:8000/api/auth/login", {
+        const response = await fetch(API_ENDPOINTS.login, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -43,13 +43,12 @@ export async function loginUser(data: LoginRequest):Promise<AuthResponse> {
         }
 
         const responseJSON: AuthResponse = await response.json()
-
         return responseJSON
     } catch(error) {
         if (error instanceof Error) {
             throw error
         } else {
-            throw new Error("Network error occured")
+            throw new Error("Network error occurred")
         }
     }
 }

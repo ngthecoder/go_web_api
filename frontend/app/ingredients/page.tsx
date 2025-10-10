@@ -160,7 +160,7 @@ export default function IngredientsPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {ingredientData.ingredients.map(ingredient => (
+            {ingredientData?.ingredients?.map(ingredient => (
               <Link href={`/ingredients/${ingredient.id}`} key={ingredient.id}>
                 <div className="border rounded-lg p-4 shadow hover:shadow-lg transition-shadow cursor-pointer">
                   <div className="flex justify-between items-start mb-2">
@@ -180,7 +180,7 @@ export default function IngredientsPage() {
             ))}
           </div>
 
-          {ingredientData.total_pages > 1 && (
+          {ingredientData?.total_pages > 1 && (
             <div className="mt-8 flex justify-center items-center space-x-2">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
@@ -191,9 +191,9 @@ export default function IngredientsPage() {
               </button>
               
               <div className="flex space-x-1">
-                {Array.from({ length: Math.min(ingredientData.total_pages, 5) }, (_, i) => {
+                {Array.from({ length: Math.min(ingredientData?.total_pages, 5) }, (_, i) => {
                   const pageNum = Math.max(1, currentPage - 2) + i;
-                  if (pageNum > ingredientData.total_pages) return null;
+                  if (pageNum > ingredientData?.total_pages) return null;
                   
                   return (
                     <button

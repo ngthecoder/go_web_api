@@ -45,6 +45,9 @@ export default function Navigation() {
             <Link href="/find-recipes" className="text-gray-700 hover:text-blue-600 transition-colors">
               Find by Ingredients
             </Link>
+            <Link href="/stats" className="text-gray-700 hover:text-blue-600">
+              Statistics
+            </Link>
 
             {isAuthenticated && (
               <Link href="/liked-recipes" className="text-gray-700 hover:text-blue-600 transition-colors">

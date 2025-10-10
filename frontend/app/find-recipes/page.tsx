@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import LikeButton from '@/components/LikeButton';
 import { useAuth } from '@/contexts/AuthContext';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface Ingredient {
   id: number;
@@ -33,7 +34,7 @@ export default function FindRecipesPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/ingredients?limit=100')
+    fetch(`${API_ENDPOINTS.ingredients}?limit=100`)
       .then(res => res.json())
       .then(data => setIngredients(data.ingredients))
       .catch(err => console.error('Error fetching ingredients:', err));
@@ -60,7 +61,7 @@ export default function FindRecipesPage() {
       }
       
       const response = await fetch(
-        `http://localhost:8000/api/recipes/find-by-ingredients?ingredients=${ingredientIds}&match_type=partial&limit=20`,
+        `${API_ENDPOINTS.recipesByIngredients}?ingredients=${ingredientIds}&match_type=partial&limit=20`,
         { headers }
       );
       const data = await response.json();

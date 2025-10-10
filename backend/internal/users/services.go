@@ -3,6 +3,7 @@ package users
 import (
 	"database/sql"
 
+	"github.com/ngthecoder/go_web_api/internal/auth"
 	"github.com/ngthecoder/go_web_api/internal/errors"
 	"github.com/ngthecoder/go_web_api/internal/recipes"
 )
@@ -100,6 +101,91 @@ func (s *UserService) removeLikedRecipe(userID string, recipeID int) error {
 	}
 	if rowsAffected == 0 {
 		return errors.NewNotFoundError("Recipe not in liked list")
+	}
+
+	return nil
+}
+
+func (s *UserService) updateUserProfile(userID string, username, email string) (UserProfile, error) {
+	var exists bool
+	err := s.db.QueryRow(
+		"SELECT EXISTS(SELECT 1 FROM users WHERE (username = ? OR email = ?) AND id != ?)",
+		username, email, userID,
+	).Scan(&exists)
+
+	if err != nil {
+		return UserProfile{}, errors.NewInternalServerError("Database error", err)
+	}
+	if exists {
+		return UserProfile{}, errors.NewConflictError("Username or email already taken")
+	}
+
+	_, err = s.db.Exec(
+		"UPDATE users SET username = ?, email = ?, updated_at = datetime('now') WHERE id = ?",
+		username, email, userID,
+	)
+	if err != nil {
+		return UserProfile{}, errors.NewInternalServerError("Failed to update profile", err)
+	}
+
+	return s.getUserProfile(userID)
+}
+
+func (s *UserService) changePassword(userID string, currentPassword, newPassword string) error {
+	var storedEncodedPasswordHash string
+	err := s.db.QueryRow("SELECT password_hash FROM users WHERE id = ?", userID).Scan(&storedEncodedPasswordHash)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return errors.NewNotFoundError("User not found")
+		}
+		return errors.NewInternalServerError("Database error", err)
+	}
+
+	verified, err := auth.VerifyPasswordHash(currentPassword, storedEncodedPasswordHash)
+	if err != nil {
+		return errors.NewInternalServerError("Failed to verify password", err)
+	}
+	if !verified {
+		return errors.NewBadRequestError("Current password is incorrect")
+	}
+
+	newEncodedPasswordHash, err := auth.HashPassword(newPassword)
+	if err != nil {
+		return errors.NewInternalServerError("Failed to hash password", err)
+	}
+
+	_, err = s.db.Exec(
+		"UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?",
+		newEncodedPasswordHash, userID,
+	)
+	if err != nil {
+		return errors.NewInternalServerError("Failed to update password", err)
+	}
+
+	return nil
+}
+
+func (s *UserService) deleteAccount(userID string, password string) error {
+	var storedEncodedPasswordHash string
+	err := s.db.QueryRow("SELECT password_hash FROM users WHERE id = ?", userID).Scan(&storedEncodedPasswordHash)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return errors.NewNotFoundError("User not found")
+		}
+		return errors.NewInternalServerError("Database error", err)
+	}
+
+	verified, err := auth.VerifyPasswordHash(password, storedEncodedPasswordHash)
+	if err != nil {
+		return errors.NewInternalServerError("Failed to verify password", err)
+	}
+	if !verified {
+		return errors.NewBadRequestError("Password is incorrect")
+	}
+
+	_, err = s.db.Exec("DELETE FROM users WHERE id = ?", userID)
+	if err != nil {
+		return errors.NewInternalServerError("Failed to delete account", err)
 	}
 
 	return nil

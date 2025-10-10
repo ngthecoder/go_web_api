@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, AuthResponse, LoginRequest, RegisterRequest } from '@/lib/types';
 import { registerUser, loginUser } from '@/lib/auth';
@@ -22,6 +22,23 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = token.split('.')[1];
+    const decoded = JSON.parse(atob(payload));
+    
+    if (!decoded.exp) {
+      return true;
+    }
+    
+    const currentTime = Math.floor(Date.now() / 1000);
+    return decoded.exp < currentTime;
+  } catch (error) {
+    console.error('Error decoding token:', error);
+    return true;
+  }
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -30,6 +47,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   
   const router = useRouter();
 
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('redirectAfterLogin');
+
+    setToken(null);
+    setUser(null);
+    setError(null);
+    
+    router.push('/');
+  }, []);
+
   useEffect(() => {
     const loadAuthState = () => {
       try {
@@ -37,8 +66,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const storedUser = localStorage.getItem('user');
 
         if (storedToken && storedUser) {
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+          if (isTokenExpired(storedToken)) {
+            console.log('Token expired, clearing auth state');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setToken(null);
+            setUser(null);
+          } else {
+            setToken(storedToken);
+            setUser(JSON.parse(storedUser));
+          }
         }
       } catch (error) {
         console.error('Error loading auth state:', error);
@@ -51,6 +88,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     loadAuthState();
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const checkTokenExpiration = () => {
+      if (isTokenExpired(token)) {
+        alert("Your session has expired. Please log in again.")
+        logout();
+      }
+    };
+
+    checkTokenExpiration();
+
+    const interval = setInterval(checkTokenExpiration, 60000);
+
+    return () => clearInterval(interval);
+  }, [token, logout]);
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
@@ -101,18 +155,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const logout = (): void => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('redirectAfterLogin');
-
-    setToken(null);
-    setUser(null);
-    setError(null);
-    
-    router.push('/');
   };
 
   const clearError = (): void => {

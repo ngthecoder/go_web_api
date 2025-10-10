@@ -8,8 +8,8 @@ A web application using Go backend API and Next.js frontend with user authentica
 - Implement secure user authentication and authorization
 
 ## Tech Stack
-- **Backend**: Go 1.22.4 + SQLite3
-- **Frontend**: Next.js 15.5.0 + TypeScript + Tailwind CSS
+- **Backend**: Go 1.24.0 + SQLite3
+- **Frontend**: Next.js 15.5.0 + React 19.1.0 + TypeScript + Tailwind CSS 4
 - **Database**: SQLite3 (for local development)
 - **Authentication**: JWT tokens with Argon2 password hashing
 - **Deployment**: Docker + AWS ECS with Terraform
@@ -29,14 +29,21 @@ git clone git@github.com:ngthecoder/go_web_api.git
 cd go_web_api
 ```
 
-2. Start the backend
+2. Set up environment variables
+```bash
+cd backend
+# Create .env file with your JWT secret
+echo "JWT_SECRET=your-secret-key-here" > .env
+```
+
+3. Start the backend
 ```bash
 cd backend
 go run main.go
 ```
 - Runs on http://localhost:8000
 
-3. Start the frontend
+4. Start the frontend
 ```bash
 cd frontend
 npm install
@@ -177,9 +184,9 @@ users (Users)              user_liked_recipes (User Preferences)      │
 | POST | `/auth/login` | User login | email, password | - | No |
 | GET | `/ingredients` | Get ingredient list, search & filter | - | `search`, `category`, `sort`, `order`, `page`, `limit` | No |
 | GET | `/ingredients/{id}` | Get ingredient details + related recipes | `id` | - | No |
-| GET | `/recipes` | Get recipe list, search & filter | - | `search`, `category`, `max_time`, `difficulty`, `sort`, `order`, `page`, `limit` | No |
-| GET | `/recipes/find-by-ingredients` | Find recipes by available ingredients | `ingredients` | `match_type`, `page`, `limit` | No |
-| GET | `/recipes/{id}` | Get recipe details + required ingredients | `id` | - | No |
+| GET | `/recipes` | Get recipe list, search & filter | - | `search`, `category`, `max_time`, `difficulty`, `sort`, `order`, `page`, `limit` | Optional |
+| GET | `/recipes/find-by-ingredients` | Find recipes by available ingredients | `ingredients` | `match_type`, `page`, `limit` | Optional |
+| GET | `/recipes/{id}` | Get recipe details + required ingredients | `id` | - | Optional |
 | GET | `/recipes/shopping-list/{id}` | Generate shopping list for recipe | `id` | `have_ingredients` | No |
 | GET | `/categories` | Get category statistics | - | - | No |
 | GET | `/stats` | Get overall statistics | - | - | No |
@@ -187,6 +194,8 @@ users (Users)              user_liked_recipes (User Preferences)      │
 | GET | `/user/liked-recipes` | Get user's liked recipes | - | - | Yes |
 | POST | `/user/liked-recipes/add` | Add recipe to liked list | recipe_id | - | Yes |
 | DELETE | `/user/liked-recipes/{id}` | Remove recipe from liked list | `id` | - | Yes |
+
+**Note**: Endpoints marked "Optional" for auth will return `is_liked: false` for unauthenticated users and `is_liked: true/false` based on user preference when authenticated.
 
 #### Authentication Endpoints
 
@@ -246,6 +255,7 @@ Response:
 **3: GET /api/recipes/find-by-ingredients**
 ```bash
 GET /api/recipes/find-by-ingredients?ingredients=2,26&match_type=partial&limit=1
+Authorization: Bearer {token} (optional)
 ```
 ```json
 [
@@ -261,7 +271,8 @@ GET /api/recipes/find-by-ingredients?ingredients=2,26&match_type=partial&limit=1
     "description": "Everyone's favorite omurice",
     "matched_ingredients_count": 2,
     "total_ingredients_count": 6,
-    "match_score": 0.33333334
+    "match_score": 0.33333334,
+    "is_liked": false
   }
 ]
 ```
@@ -343,22 +354,19 @@ Authorization: Bearer {token}
 
 Response:
 ```json
-{
-  "liked_recipes": [
-    {
-      "id": 1,
-      "name": "Scrambled Eggs",
-      "category": "Breakfast",
-      "prep_time_minutes": 5,
-      "cook_time_minutes": 5,
-      "servings": 2,
-      "difficulty": "easy",
-      "instructions": "1. Crack eggs into bowl...",
-      "description": "Fluffy and creamy scrambled eggs"
-    }
-  ],
-  "total": 1
-}
+[
+  {
+    "id": 1,
+    "name": "Scrambled Eggs",
+    "category": "Breakfast",
+    "prep_time_minutes": 5,
+    "cook_time_minutes": 5,
+    "servings": 2,
+    "difficulty": "easy",
+    "instructions": "1. Crack eggs into bowl...",
+    "description": "Fluffy and creamy scrambled eggs"
+  }
+]
 ```
 
 **9: POST /api/user/liked-recipes/add**
@@ -397,12 +405,13 @@ Response:
 ### Page Details
 
 #### Main Pages
-- **Home (/)**: Recipe browsing with search, filtering, and pagination
+- **Home (/)**: Recipe browsing with search, filtering, pagination, and like functionality
 - **Ingredients (/ingredients)**: Ingredient browsing with search and filtering
-- **Find Recipes (/find-recipes)**: Recipe search by available ingredients
-- **Register (/register)**: User registration page
-- **Login (/login)**: User login page
+- **Find Recipes (/find-recipes)**: Recipe search by available ingredients with like functionality
+- **Register (/register)**: User registration page with validation
+- **Login (/login)**: User login page with password visibility toggle
 - **Profile (/profile)**: User profile management (protected route)
+- **Liked Recipes (/liked-recipes)**: View and manage liked recipes (protected route)
 
 #### Ingredient Detail Page (/ingredients/[id])
 - Display ingredient details (calories, category, description)
@@ -414,24 +423,30 @@ Response:
 - List of required ingredients (with quantities and units)
 - Click ingredients to navigate to ingredient details
 - Shopping list generation functionality
+- Like button for authenticated users
 
 ### User Authentication Flow
 
 #### Registration Flow
 1. User accesses `/register` page
-2. Fills out registration form (username, email, password)
+2. Fills out registration form with client-side validation:
+   - Username: minimum 3 characters, alphanumeric with underscores
+   - Email: valid email format
+   - Password: minimum 6 characters with confirmation
 3. Frontend sends POST request to `/api/auth/register`
-4. Backend validates input and creates user account
+4. Backend validates input and creates user account with Argon2 hashed password
 5. JWT token returned and stored in localStorage
-6. User redirected to profile page
+6. User redirected to home page or previous location
+7. AuthContext updates application state
 
 #### Login Flow
 1. User accesses `/login` page
-2. Enters email and password
+2. Enters email and password with optional password visibility toggle
 3. Frontend sends POST request to `/api/auth/login`
-4. Backend validates credentials
+4. Backend validates credentials using Argon2 verification
 5. JWT token returned and stored in localStorage
-6. User can access protected features
+6. User redirected to home page or previous location
+7. AuthContext updates application state
 
 ### User Experience Flows
 
@@ -439,49 +454,70 @@ Response:
 1. Navigate to "Find Recipes" page (/find-recipes)
 2. Search and select available ingredients from checkbox list
 3. Click "Search Recipes" button
-4. View matched recipes with match scores
-5. Click on recipe to view full details
+4. View matched recipes with match scores and like status
+5. Click heart icon to like/unlike recipes (requires authentication)
+6. Click on recipe to view full details
 
 #### Flow 2: User Registration and Profile
 1. Click "Register" in navigation
-2. Fill out registration form
+2. Fill out registration form with validation feedback
 3. Automatically logged in after successful registration
 4. Access profile page to view account information
-5. Logout functionality available
+5. View account statistics (days as member, liked recipes count)
+6. Logout functionality available in navigation dropdown
 
 #### Flow 3: User Profile and Liked Recipes
 1. User logs into their account
 2. Navigates to profile page to view account information
-3. Browses through recipe catalog
-4. Adds interesting recipes to their liked list
-5. Views their liked recipes collection
-6. Removes recipes they're no longer interested in
+3. Browses through recipe catalog (home page or find recipes)
+4. Clicks heart icon on recipes to add to liked list
+5. Views liked recipes collection at /liked-recipes
+6. Removes recipes by clicking heart icon again
+7. Real-time UI updates reflect like status changes
+
+#### Flow 4: Protected Routes and Authentication
+1. Unauthenticated user attempts to access protected route
+2. System stores intended destination in localStorage
+3. User redirected to login page with contextual message
+4. After successful login, user redirected to original destination
+5. ProtectedRoute component ensures only authenticated access
 
 ### Project Structure
 ```
 frontend/
 ├── app/
-│   ├── page.tsx                 # Home page (recipe browsing)
+│   ├── page.tsx                 # Home page (recipe browsing with likes)
 │   ├── ingredients/
 │   │   ├── page.tsx             # Ingredients list
 │   │   └── [id]/page.tsx        # Ingredient detail
 │   ├── recipes/
-│   │   └── [id]/page.tsx        # Recipe detail
+│   │   └── [id]/page.tsx        # Recipe detail with like button
 │   ├── find-recipes/
-│   │   └── page.tsx             # Recipe search by ingredients
+│   │   └── page.tsx             # Recipe search by ingredients with likes
 │   ├── register/
-│   │   └── page.tsx             # User registration
+│   │   └── page.tsx             # User registration with validation
 │   ├── login/
 │   │   └── page.tsx             # User login
 │   ├── profile/
-│   │   └── page.tsx             # User profile (protected)
-│   ├── layout.tsx               # Root layout with navigation
-│   └── globals.css              # Global styles (Tailwind CSS)
+│   │   ├── page.tsx             # User profile (protected)
+│   │   ├── edit/
+│   │   │   └── page.tsx         # Edit profile (placeholder)
+│   │   └── change-password/
+│   │       └── page.tsx         # Change password (placeholder)
+│   ├── liked-recipes/
+│   │   └── page.tsx             # Liked recipes (protected)
+│   ├── layout.tsx               # Root layout with navigation & AuthProvider
+│   └── globals.css              # Global styles (Tailwind CSS 4)
 ├── components/
-│   └── Navigation.tsx           # Navigation component
+│   ├── Navigation.tsx           # Navigation with auth dropdown
+│   ├── ProtectedRoute.tsx       # Route protection HOC
+│   └── LikeButton.tsx           # Reusable like button component
+├── contexts/
+│   └── AuthContext.tsx          # Authentication state management
 ├── lib/
-│   ├── auth.ts                  # Authentication functions
+│   ├── auth.ts                  # Authentication API functions
 │   └── types.ts                 # TypeScript interfaces
+└── package.json                 # Dependencies (React 19.1.0, Next.js 15.5.0)
 ```
 
 ## Security Features
@@ -490,16 +526,29 @@ frontend/
 - **Argon2 Hashing**: Passwords are hashed using Argon2id algorithm
 - **Salt Generation**: Random 16-byte salt generated for each password
 - **Memory-hard Function**: Argon2 parameters: time=3, memory=64MB, threads=2
+- **Constant-time Comparison**: Uses subtle.ConstantTimeCompare for password verification
 
 ### JWT Token Security
-- **HMAC-SHA256 Signing**: Tokens signed with secret key
-- **24-Hour Expiration**: Tokens expire after 24 hours
+- **HMAC-SHA256 Signing**: Tokens signed with secret key from environment variables
+- **24-Hour Expiration**: Tokens expire after 24 hours for security
 - **Stateless Authentication**: No server-side session storage required
+- **Bearer Token Format**: Tokens prefixed with "Bearer" in Authorization header
+- **Client-side Storage**: Tokens stored in localStorage with automatic cleanup on logout
 
 ### API Security
-- **CORS Protection**: Configured for frontend origin only
+- **CORS Protection**: Configured for frontend origin (http://localhost:3000)
 - **Input Validation**: All endpoints validate input parameters
-- **Error Handling**: Secure error messages without sensitive information
+- **Error Handling**: Secure error messages without sensitive information using custom HTTPError types
+- **Optional Authentication**: Some endpoints support both authenticated and anonymous access
+- **Protected Routes**: Client-side ProtectedRoute component guards sensitive pages
+- **Automatic Redirects**: Stores intended destination before login redirect
+
+### Frontend Security
+- **Form Validation**: Client-side validation before API calls
+- **Password Visibility Toggle**: User-controlled password display
+- **Token Management**: Automatic token cleanup on logout
+- **Protected Routes**: ProtectedRoute HOC prevents unauthorized access
+- **Error Boundaries**: Graceful error handling in AuthContext
 
 ## Features
 
@@ -508,86 +557,119 @@ frontend/
 2. **Ingredient Management**: Browse ingredients with detailed nutritional information
 3. **Recipe Discovery**: Find recipes based on available ingredients with match scoring
 4. **Shopping Lists**: Generate shopping lists for recipes based on available ingredients
-5. **User Authentication**: Secure user registration and login system
-6. **User Profiles**: Personal user accounts with profile management
-7. **Liked Recipes**: Users can save and manage their favorite recipes
+5. **User Authentication**: Secure user registration and login system with validation
+6. **User Profiles**: Personal user accounts with profile management and statistics
+7. **Liked Recipes**: Users can save and manage their favorite recipes with real-time updates
+8. **Optional Authentication**: Browse recipes and ingredients without account (like feature requires login)
+9. **Protected Routes**: Client-side route protection for authenticated-only pages
+10. **Responsive Design**: Mobile-friendly interface with Tailwind CSS 4
 
 ### User Stories
 1. **Browse Recipes**: Users can search and filter recipes by category, difficulty, cooking time
 2. **Find Recipes by Ingredients**: Users can select available ingredients and find matching recipes
 3. **View Details**: Users can view detailed recipe instructions and ingredient requirements
-4. **User Registration**: New users can create accounts securely
-5. **User Login**: Existing users can log in to access their profiles
-6. **User Profile Management**: Users can view their profile information
-7. **Liked Recipes**: Users can add and remove recipes from their liked list
-8. **Generate Shopping Lists**: Users can create shopping lists for recipes they want to make
-9. **Bidirectional Navigation**: Navigate between ingredients and recipes seamlessly
+4. **User Registration**: New users can create accounts securely with validation
+5. **User Login**: Existing users can log in with password visibility toggle
+6. **User Profile Management**: Users can view their profile information and statistics
+7. **Like Recipes**: Authenticated users can like/unlike recipes with real-time UI updates
+8. **Liked Recipes Collection**: Users can view and manage all their liked recipes
+9. **Generate Shopping Lists**: Users can create shopping lists for recipes they want to make
+10. **Bidirectional Navigation**: Navigate between ingredients and recipes seamlessly
+11. **Anonymous Browsing**: Browse content without authentication (limited features)
 
 ### Use Cases
 
 **Scenario 1: New User Registration**
 1. User visits the application
 2. Clicks "Register" in navigation
-3. Fills out username, email, and password
-4. System creates account and logs user in automatically
-5. User can now access profile and future features
+3. Fills out username, email, and password with real-time validation
+4. System validates: username (3+ chars, alphanumeric), email format, password (6+ chars)
+5. Password confirmation must match
+6. System creates account with Argon2 hashed password and logs user in automatically
+7. User redirected to home page or intended destination
 
 **Scenario 2: Recipe Discovery Workflow**
 1. User selects "Find Recipes" from navigation
 2. Searches and selects available ingredients (e.g., tomato, onion, rice)
-3. System shows matching recipes with match scores
-4. User clicks on recipe to view full instructions
-5. User can generate shopping list for missing ingredients
+3. System shows matching recipes with match scores and like status
+4. User can like recipes (requires authentication)
+5. User clicks on recipe to view full instructions and ingredients
+6. User can generate shopping list for missing ingredients
 
 **Scenario 3: User Profile and Liked Recipes**
 1. User logs into their account
-2. Navigates to profile page to view account information
+2. Navigates to profile page to view account information and statistics
 3. Browses through recipe catalog
-4. Adds interesting recipes to their liked list
-5. Views their liked recipes collection
-6. Removes recipes they're no longer interested in
+4. Clicks heart icon on recipes to add to liked list
+5. Views liked recipes collection at /liked-recipes
+6. Can remove recipes by clicking heart icon again
+7. UI updates in real-time across all pages
+
+**Scenario 4: Anonymous User Experience**
+1. Anonymous user browses recipes and ingredients
+2. Attempts to like a recipe by clicking heart icon
+3. System redirects to login page with message "Log in to save your favorite recipes"
+4. After login, user is redirected back to the original page
+5. Can now like recipes and access full features
 
 ## Team Development Workflow
 
-### Backend Tasks
-- Database schema design and implementation
-- User authentication system (registration, login, JWT)
-- Password security with Argon2 hashing
-- Basic recipe and ingredient CRUD endpoints
-- Recipe search by ingredients functionality
-- Shopping list generation
-- Search, filtering, and pagination
-- Statistics and category endpoints
-- CORS and security middleware
-- User-specific features (liked recipes, user preferences)
-- API documentation server
-- Rate limiting and advanced security features
-- Custom error handling with HTTP status codes
-- Clean service layer architecture
-- Input validation and sanitization
+### Backend Tasks (Completed)
+- ✅ Database schema design and implementation with indexes
+- ✅ User authentication system (registration, login, JWT)
+- ✅ Password security with Argon2 hashing
+- ✅ Basic recipe and ingredient CRUD endpoints
+- ✅ Recipe search by ingredients functionality
+- ✅ Shopping list generation
+- ✅ Search, filtering, and pagination
+- ✅ Statistics and category endpoints
+- ✅ CORS and security middleware
+- ✅ User-specific features (liked recipes, user preferences)
+- ✅ Custom error handling with HTTP status codes
+- ✅ Clean service layer architecture
+- ✅ Input validation and sanitization
+- ✅ Optional authentication support for recipe endpoints
 
-### Frontend Tasks (Next.js + TypeScript)
-- Next.js project setup with TypeScript
-- User authentication UI (register, login, profile)
-- Recipe and ingredient browsing pages
-- Recipe search by ingredients interface
-- Responsive design with Tailwind CSS
-- Navigation component with auth state
-- Local storage for authentication tokens
-- Protected routes and auth guards
-- User preferences and liked recipes
-- Advanced search and filtering UI
-- Shopping list management
+### Frontend Tasks (Completed)
+- ✅ Next.js 15.5 project setup with TypeScript and React 19.1
+- ✅ User authentication UI (register, login, profile) with validation
+- ✅ Recipe and ingredient browsing pages
+- ✅ Recipe search by ingredients interface
+- ✅ Responsive design with Tailwind CSS 4
+- ✅ Navigation component with auth dropdown
+- ✅ Local storage for authentication tokens
+- ✅ Protected routes and auth guards (ProtectedRoute component)
+- ✅ User preferences and liked recipes with real-time updates
+- ✅ LikeButton component for recipe likes
+- ✅ AuthContext for global authentication state management
+- ✅ Client-side form validation with error feedback
+- ✅ Password visibility toggle
+- ✅ Automatic redirect after login
+- ✅ Anonymous browsing with optional authentication
+
+### Pending Tasks
+- [ ] Edit profile functionality (PUT /api/user/profile endpoint)
+- [ ] Change password functionality (PUT /api/user/password endpoint)
+- [ ] Shopping list management UI
+- [ ] Rate limiting implementation
+- [ ] Advanced search and filtering UI improvements
+- [ ] Email verification for new accounts
+- [ ] Password reset functionality
+- [ ] User avatar upload
+- [ ] Recipe ratings and reviews
+- [ ] Social sharing features
 
 ### Security & Performance Tasks
-- JWT token authentication
-- Password hashing with Argon2
-- Input validation and sanitization
-- CORS configuration
-- Rate limiting implementation
-- SQL injection prevention
-- XSS protection
-- Performance optimization and caching
+- ✅ JWT token authentication
+- ✅ Password hashing with Argon2
+- ✅ Input validation and sanitization
+- ✅ CORS configuration
+- ✅ SQL injection prevention
+- ⏳ Rate limiting implementation
+- ⏳ XSS protection
+- ⏳ Performance optimization and caching
+- ⏳ API response compression
+- ⏳ Database query optimization
 
 ## Docker Deployment
 
@@ -618,6 +700,8 @@ EXPOSE 8000
 
 CMD ["./main"]
 ```
+
+**Note**: The current Dockerfile has `CGO_ENABLED=0` but should be `CGO_ENABLED=1` for SQLite support.
 
 #### Frontend Dockerfile
 ```dockerfile
@@ -883,17 +967,35 @@ go run main.go
 ```bash
 # Issue: Cannot call API from frontend  
 # Solution: Check CORS settings in main.go
-# Ensure frontend origin is whitelisted
+# Ensure frontend origin is whitelisted (http://localhost:3000)
 ```
 
 **3. JWT Token Issues**
 ```bash
 # Check JWT_SECRET environment variable
-# Ensure token is properly stored in localStorage
-# Verify token format in Authorization header
+# Ensure .env file exists in backend directory
+cd backend
+cat .env  # Should show JWT_SECRET=your-secret-key
+
+# Verify token is properly stored in localStorage
+# Check browser console for token format in Authorization header
 ```
 
-**4. Docker Build Issues**
+**4. Authentication Issues**
+```bash
+# Issue: User cannot login after registration
+# Solution: Verify password hashing is working
+# Check that Argon2 dependencies are installed: golang.org/x/crypto
+
+# Issue: Token expired errors
+# Solution: Tokens expire after 24 hours, user needs to login again
+
+# Issue: Protected routes not working
+# Solution: Check ProtectedRoute component and AuthContext
+# Verify token is present in localStorage
+```
+
+**5. Docker Build Issues**
 ```bash
 # Clear Docker cache
 docker system prune
@@ -903,9 +1005,15 @@ docker-compose build --no-cache
 
 # Check container logs
 docker-compose logs backend
+docker-compose logs frontend
+
+# Issue: Backend fails to start in Docker
+# Solution: Ensure CGO_ENABLED=1 in Dockerfile for SQLite support
+# Update backend/Dockerfile line 9:
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o main .
 ```
 
-**5. AWS Deployment Issues**
+**6. AWS Deployment Issues**
 ```bash
 # Check ECS service status
 aws ecs describe-services --cluster recipe-cluster --services recipe-backend
@@ -915,6 +1023,32 @@ aws logs tail /ecs/recipe-backend --follow
 
 # Verify security group rules
 aws ec2 describe-security-groups --group-ids sg-xxxxx
+```
+
+**7. Frontend Build Issues**
+```bash
+# Issue: npm install fails
+# Solution: Clear cache and reinstall
+cd frontend
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm install
+
+# Issue: TypeScript errors
+# Solution: Check tsconfig.json and run type checking
+npm run build
+```
+
+**8. Like Button Not Working**
+```bash
+# Issue: Likes not persisting
+# Solution: Check JWT token is being sent in Authorization header
+# Verify backend endpoint: POST /api/user/liked-recipes/add
+# Check browser console for error messages
+
+# Issue: Like status not updating
+# Solution: Verify AuthContext is providing token
+# Check that onLikeChange callback is updating parent state
 ```
 
 ## Production Environment
@@ -944,21 +1078,88 @@ terraform apply
 ./scripts/deploy.sh production
 ```
 
+## Backend Architecture
+
+### Project Structure
+```
+backend/
+├── internal/
+│   ├── auth/
+│   │   ├── handlers.go          # Authentication HTTP handlers
+│   │   ├── models.go            # User and auth models
+│   │   └── services.go          # Auth business logic (JWT, Argon2)
+│   ├── errors/
+│   │   └── http_errors.go       # Custom HTTP error types
+│   ├── ingredients/
+│   │   ├── handlers.go          # Ingredient HTTP handlers
+│   │   ├── models.go            # Ingredient models
+│   │   └── services.go          # Ingredient business logic
+│   ├── recipes/
+│   │   ├── handlers.go          # Recipe HTTP handlers
+│   │   ├── models.go            # Recipe models
+│   │   └── services.go          # Recipe business logic
+│   └── users/
+│       ├── handlers.go          # User profile HTTP handlers
+│       ├── models.go            # User profile models
+│       └── services.go          # User profile business logic
+├── main.go                      # Application entry point
+├── go.mod                       # Go module dependencies
+├── go.sum                       # Dependency checksums
+├── Dockerfile                   # Docker build configuration
+└── .env                         # Environment variables (not committed)
+```
+
+### Middleware Stack
+1. **Logging Middleware**: Logs all HTTP requests with timing
+2. **CORS Middleware**: Handles cross-origin requests
+3. **Auth Middleware**: Validates JWT tokens for protected routes
+4. **Optional Auth Middleware**: Adds user context when token present
+
+### Design Patterns
+- **Service Layer Pattern**: Business logic separated from HTTP handlers
+- **Repository Pattern**: Database operations encapsulated in services
+- **Middleware Pattern**: Cross-cutting concerns handled via middleware
+- **Error Handling Pattern**: Custom HTTPError types for consistent error responses
+
 ## Future Enhancements
 
 ### Planned Features
-1. **User Preferences**: Save liked recipes and dietary restrictions
+1. **User Preferences**: Save dietary restrictions and favorite categories
 2. **Mobile App**: React Native mobile application
-3. **Recipe Ratings**: User rating and review system
+3. **Recipe Ratings**: User rating and review system with aggregated scores
 4. **Social Features**: Share recipes and follow other users
-5. **Meal Planning**: Weekly meal planning with shopping lists
-6. **Nutrition Tracking**: Detailed nutritional analysis
+5. **Meal Planning**: Weekly meal planning with automated shopping lists
+6. **Nutrition Tracking**: Detailed nutritional analysis and daily tracking
+7. **Recipe Collections**: Create custom recipe collections and folders
+8. **Advanced Search**: Full-text search with filters and sorting
+9. **Recipe Recommendations**: AI-powered recipe suggestions based on preferences
+10. **Grocery Store Integration**: Direct shopping list export to grocery services
 
 ### Technical Improvements
-1. **Caching**: Implement Redis for session management and caching
-2. **Search**: Elasticsearch for advanced recipe search
+1. **Caching**: Implement Redis for session management and API response caching
+2. **Search**: Elasticsearch for advanced recipe search and autocomplete
 3. **Testing**: Comprehensive unit tests and integration tests
-4. **CI/CD**: Automated testing and deployment pipeline
-5. **Monitoring**: Application monitoring and logging with DataDog
-6. **API Documentation**: Interactive API documentation with Swagger
-7. **Performance**: Database query optimization and CDN integration
+   - Backend: Go testing package with table-driven tests
+   - Frontend: Jest and React Testing Library
+4. **CI/CD**: Automated testing and deployment pipeline with GitHub Actions
+5. **Monitoring**: Application monitoring and logging with DataDog or Prometheus
+6. **API Documentation**: Interactive API documentation with Swagger/OpenAPI
+7. **Performance**: 
+   - Database query optimization with prepared statements
+   - CDN integration for static assets
+   - Image optimization and lazy loading
+8. **Security Enhancements**:
+   - Rate limiting per user/IP
+   - Email verification for new accounts
+   - Password reset via email
+   - Two-factor authentication (2FA)
+   - HTTPS enforcement in production
+9. **Database Improvements**:
+   - Database connection pooling
+   - Read replicas for scaling
+   - Database migrations with tools like golang-migrate
+10. **Code Quality**:
+    - Linting with golangci-lint
+    - Pre-commit hooks
+    - Code coverage reports
+    - API versioning

@@ -30,7 +30,7 @@ export default function RootLayout({
         <AuthProvider>
           <div className="flex flex-col h-full">
             <Navigation />
-            <main className="flex-1 bg-gray-50">
+            <main className="flex-1 bg-gray-50 pt-4">
               {children}
             </main>
           </div>

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -37,9 +38,9 @@ type CategoryCountsResponse struct {
 	RecipeCategories     []CategoryCount `json:"recipe_categories"`
 }
 
-func initDB() {
+func initDB(dbPath string) {
 	var err error
-	db, err = sql.Open("sqlite3", "./foods.db")
+	db, err = sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -677,9 +678,11 @@ func populateTestData() {
 	fmt.Println("Enhanced English test data populated successfully!")
 }
 
-func enableCORS(next http.HandlerFunc) http.HandlerFunc {
+func enableCORS(allowedOrigins []string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		for _, allowedOrigin := range allowedOrigins {
+			w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -707,7 +710,6 @@ func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func categoriesHandler(w http.ResponseWriter, r *http.Request) {
-	// 食材のカテゴリ件数
 	ingRows, err := db.Query(`
 		SELECT category, COUNT(*)
 		FROM ingredients
@@ -720,21 +722,21 @@ func categoriesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer ingRows.Close()
 
-	var ingCounts []CategoryCount
+	ingCounts := make(map[string]int)
 	for ingRows.Next() {
-		var c CategoryCount
-		if err := ingRows.Scan(&c.Category, &c.Count); err != nil {
+		var category string
+		var count int
+		if err := ingRows.Scan(&category, &count); err != nil {
 			http.Error(w, "Data scanning error", http.StatusInternalServerError)
 			return
 		}
-		ingCounts = append(ingCounts, c)
+		ingCounts[category] = count
 	}
 	if err := ingRows.Err(); err != nil {
 		http.Error(w, "Data scanning error", http.StatusInternalServerError)
 		return
 	}
 
-	// レシピのカテゴリ件数
 	recRows, err := db.Query(`
 		SELECT category, COUNT(*)
 		FROM recipes
@@ -747,23 +749,31 @@ func categoriesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer recRows.Close()
 
-	var recCounts []CategoryCount
+	recCounts := make(map[string]int)
 	for recRows.Next() {
-		var c CategoryCount
-		if err := recRows.Scan(&c.Category, &c.Count); err != nil {
+		var category string
+		var count int
+		if err := recRows.Scan(&category, &count); err != nil {
 			http.Error(w, "Data scanning error", http.StatusInternalServerError)
 			return
 		}
-		recCounts = append(recCounts, c)
+		recCounts[category] = count
 	}
 	if err := recRows.Err(); err != nil {
 		http.Error(w, "Data scanning error", http.StatusInternalServerError)
 		return
 	}
 
-	// JSONレスポンス（構造体ベース）
+	type CategoryCountsResponse struct {
+		IngredientCategories map[string]int `json:"ingredient_categories"`
+		RecipeCategories     map[string]int `json:"recipe_categories"`
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	resp := CategoryCountsResponse{IngredientCategories: ingCounts, RecipeCategories: recCounts}
+	resp := CategoryCountsResponse{
+		IngredientCategories: ingCounts,
+		RecipeCategories:     recCounts,
+	}
 	json.NewEncoder(w).Encode(resp)
 }
 
@@ -832,20 +842,23 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	initDB()
-	populateTestData()
-	defer db.Close()
-
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")
+	dbPath := os.Getenv("DATABASE_PATH")
+	port := os.Getenv("PORT")
+	allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
 	if jwtSecret == "" {
 		log.Fatal("Missing JWT_SECRET attribute in .env file")
 	}
 	log.Println("Successfully loaded JWT_SECRET from .env file")
+
+	initDB(dbPath)
+	populateTestData()
+	defer db.Close()
 
 	authService := auth.NewAuthService(db, jwtSecret)
 	authHandler := auth.NewAuthHandler(authService)
@@ -861,24 +874,27 @@ func main() {
 
 	log.Println("Server running on port 8000")
 
-	http.HandleFunc("/api/auth/register", loggingMiddleware(enableCORS(authHandler.RegisterHandler)))
-	http.HandleFunc("/api/auth/login", loggingMiddleware(enableCORS(authHandler.LoginHandler)))
+	http.HandleFunc("/api/auth/register", loggingMiddleware(enableCORS(allowedOrigins, authHandler.RegisterHandler)))
+	http.HandleFunc("/api/auth/login", loggingMiddleware(enableCORS(allowedOrigins, authHandler.LoginHandler)))
 
-	http.HandleFunc("/api/user/profile", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.GetProfile))))
-	http.HandleFunc("/api/user/liked-recipes", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.GetLikedRecipes))))
-	http.HandleFunc("/api/user/liked-recipes/add", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.AddLikedRecipe))))
-	http.HandleFunc("/api/user/liked-recipes/", loggingMiddleware(enableCORS(authHandler.AuthMiddleware(userHandler.RemoveLikedRecipe))))
+	http.HandleFunc("/api/user/profile", loggingMiddleware(enableCORS(allowedOrigins, authHandler.AuthMiddleware(userHandler.GetProfile))))
+	http.HandleFunc("/api/user/liked-recipes", loggingMiddleware(enableCORS(allowedOrigins, authHandler.AuthMiddleware(userHandler.GetLikedRecipes))))
+	http.HandleFunc("/api/user/liked-recipes/add", loggingMiddleware(enableCORS(allowedOrigins, authHandler.AuthMiddleware(userHandler.AddLikedRecipe))))
+	http.HandleFunc("/api/user/liked-recipes/", loggingMiddleware(enableCORS(allowedOrigins, authHandler.AuthMiddleware(userHandler.RemoveLikedRecipe))))
+	http.HandleFunc("/api/user/profile/update", loggingMiddleware(enableCORS(allowedOrigins, authHandler.AuthMiddleware(userHandler.UpdateProfile))))
+	http.HandleFunc("/api/user/password", loggingMiddleware(enableCORS(allowedOrigins, authHandler.AuthMiddleware(userHandler.ChangePassword))))
+	http.HandleFunc("/api/user/account", loggingMiddleware(enableCORS(allowedOrigins, authHandler.AuthMiddleware(userHandler.DeleteAccount))))
 
-	http.HandleFunc("/api/recipes", loggingMiddleware(enableCORS(authHandler.OptionalAuthMiddleware(recipesHandler.AllRecipesHandler))))
-	http.HandleFunc("/api/recipes/", loggingMiddleware(enableCORS(authHandler.OptionalAuthMiddleware(recipesHandler.RecipeDetailHandler))))
-	http.HandleFunc("/api/recipes/find-by-ingredients", loggingMiddleware(enableCORS(authHandler.OptionalAuthMiddleware(recipesHandler.FindRecipesByIngredientsHandler))))
-	http.HandleFunc("/api/recipes/shopping-list/", loggingMiddleware(enableCORS(recipesHandler.ShoppingListHandler)))
+	http.HandleFunc("/api/recipes", loggingMiddleware(enableCORS(allowedOrigins, authHandler.OptionalAuthMiddleware(recipesHandler.AllRecipesHandler))))
+	http.HandleFunc("/api/recipes/", loggingMiddleware(enableCORS(allowedOrigins, authHandler.OptionalAuthMiddleware(recipesHandler.RecipeDetailHandler))))
+	http.HandleFunc("/api/recipes/find-by-ingredients", loggingMiddleware(enableCORS(allowedOrigins, authHandler.OptionalAuthMiddleware(recipesHandler.FindRecipesByIngredientsHandler))))
+	http.HandleFunc("/api/recipes/shopping-list/", loggingMiddleware(enableCORS(allowedOrigins, recipesHandler.ShoppingListHandler)))
 
-	http.HandleFunc("/api/ingredients", loggingMiddleware(enableCORS(ingredientsHandler.AllIngredientsHandler)))
-	http.HandleFunc("/api/ingredients/", loggingMiddleware(enableCORS(ingredientsHandler.IngredientDetailsHandler)))
+	http.HandleFunc("/api/ingredients", loggingMiddleware(enableCORS(allowedOrigins, ingredientsHandler.AllIngredientsHandler)))
+	http.HandleFunc("/api/ingredients/", loggingMiddleware(enableCORS(allowedOrigins, ingredientsHandler.IngredientDetailsHandler)))
 
-	http.HandleFunc("/api/categories", loggingMiddleware(enableCORS(categoriesHandler)))
-	http.HandleFunc("/api/stats", loggingMiddleware(enableCORS(statsHandler)))
+	http.HandleFunc("/api/categories", loggingMiddleware(enableCORS(allowedOrigins, categoriesHandler)))
+	http.HandleFunc("/api/stats", loggingMiddleware(enableCORS(allowedOrigins, statsHandler)))
 
-	log.Fatal(http.ListenAndServe(":8000", nil))
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

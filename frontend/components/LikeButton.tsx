@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { toggleLikedRecipe } from '@/lib/api';
 
 interface LikeButtonProps {
   recipeId: number;
@@ -53,31 +54,7 @@ export default function LikeButton({
     setError(null);
 
     try {
-      if (!isLiked) {
-        const response = await fetch('http://localhost:8000/api/user/liked-recipes/add', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ recipe_id: recipeId })
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to like recipe');
-        }
-      } else {
-        const response = await fetch(`http://localhost:8000/api/user/liked-recipes/${recipeId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to unlike recipe');
-        }
-      }
+      toggleLikedRecipe(token, recipeId, isLiked)
 
       if (onLikeChange) {
         onLikeChange(newLikedState);

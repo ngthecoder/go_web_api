@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface Ingredient {
   id: number;
@@ -48,7 +49,7 @@ export default function IngredientsPage() {
       params.set('page', currentPage.toString());
       params.set('limit', itemsPerPage.toString());
       
-      const response = await fetch(`http://localhost:8000/api/ingredients?${params}`);
+      const response = await fetch(`${API_ENDPOINTS.ingredients}?${params}`);
       const data = await response.json();
       setIngredientData(data);
     } catch (error) {
@@ -159,7 +160,7 @@ export default function IngredientsPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {ingredientData.ingredients.map(ingredient => (
+            {ingredientData?.ingredients?.map(ingredient => (
               <Link href={`/ingredients/${ingredient.id}`} key={ingredient.id}>
                 <div className="border rounded-lg p-4 shadow hover:shadow-lg transition-shadow cursor-pointer">
                   <div className="flex justify-between items-start mb-2">
@@ -179,7 +180,7 @@ export default function IngredientsPage() {
             ))}
           </div>
 
-          {ingredientData.total_pages > 1 && (
+          {ingredientData?.total_pages > 1 && (
             <div className="mt-8 flex justify-center items-center space-x-2">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
@@ -190,9 +191,9 @@ export default function IngredientsPage() {
               </button>
               
               <div className="flex space-x-1">
-                {Array.from({ length: Math.min(ingredientData.total_pages, 5) }, (_, i) => {
+                {Array.from({ length: Math.min(ingredientData?.total_pages, 5) }, (_, i) => {
                   const pageNum = Math.max(1, currentPage - 2) + i;
-                  if (pageNum > ingredientData.total_pages) return null;
+                  if (pageNum > ingredientData?.total_pages) return null;
                   
                   return (
                     <button

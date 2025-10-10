@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import LikeButton from '@/components/LikeButton';
 import { useAuth } from '@/contexts/AuthContext';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface IngredientWithQuantity {
   ingredient_id: number;
@@ -45,7 +46,7 @@ export default function RecipeDetailPage() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      fetch(`http://localhost:8000/api/recipes/${params.id}`, { headers })
+      fetch(API_ENDPOINTS.recipeById(String(params.id)), { headers })
         .then(res => res.json())
         .then(data => {
           setRecipeDetail(data);

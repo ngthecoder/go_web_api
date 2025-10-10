@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface Ingredient {
   id: number;
@@ -36,7 +37,7 @@ export default function IngredientDetailPage() {
 
   useEffect(() => {
     if (params.id) {
-      fetch(`http://localhost:8000/api/ingredients/${params.id}`)
+      fetch(API_ENDPOINTS.ingredientById(String(params.id)))
         .then(res => {
           if (!res.ok) {
             throw new Error(`Ingredient not found (${res.status})`);

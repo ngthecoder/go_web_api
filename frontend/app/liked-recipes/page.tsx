@@ -43,7 +43,11 @@ export default function LikedRecipesPage() {
         }
 
         const data = await response.json();
-        setLikedRecipes(data);
+        if (Array.isArray(data)) {
+          setLikedRecipes(data);
+        } else {
+          setLikedRecipes([]);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Something went wrong');
         console.error('Error fetching liked recipes:', err);
@@ -67,7 +71,7 @@ export default function LikedRecipesPage() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">My Liked Recipes</h1>
           <p className="text-gray-600">
-            {likedRecipes !== undefined && loading ? 'Loading...' : `You have ${likedRecipes?.length} liked recipe${likedRecipes?.length !== 1 ? 's' : ''}`}
+            {loading ? 'Loading...' : `You have ${likedRecipes?.length} liked recipe${likedRecipes?.length !== 1 ? 's' : ''}`}
           </p>
         </div>
 

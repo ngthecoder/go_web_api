@@ -26,51 +26,53 @@ export default function ProfilePage() {
           </div>
 
           {user && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Username
-                  </label>
-                  <p className="text-lg text-gray-900 bg-gray-50 px-3 py-2 rounded border">
-                    {user.username}
-                  </p>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Username
+                    </label>
+                    <p className="text-lg text-gray-900 bg-gray-50 px-3 py-2 rounded border">
+                      {user.username}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <p className="text-lg text-gray-900 bg-gray-50 px-3 py-2 rounded border">
+                      {user.email}
+                    </p>
+                  </div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <p className="text-lg text-gray-900 bg-gray-50 px-3 py-2 rounded border">
-                    {user.email}
-                  </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Member Since
+                    </label>
+                    <p className="text-lg text-gray-900 bg-gray-50 px-3 py-2 rounded border">
+                      {new Date(user.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    User ID
-                  </label>
-                  <p className="text-sm text-gray-600 font-mono bg-gray-50 px-3 py-2 rounded border break-all">
-                    {user.id}
-                  </p>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Member Since
-                  </label>
-                  <p className="text-lg text-gray-900 bg-gray-50 px-3 py-2 rounded border">
-                    {new Date(user.created_at).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
+              <div className='mb-8'>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  User ID
+                </label>
+                <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 font-mono overflow-x-auto whitespace-nowrap">
+                  {user?.id}
                 </div>
               </div>
-            </div>
+            </>
           )}
 
           <div className="border-t pt-6">
@@ -120,26 +122,6 @@ export default function ProfilePage() {
                   <p className="text-sm text-purple-700">View your favorite recipes</p>
                 </div>
               </Link>
-            </div>
-          </div>
-
-          <div className="border-t pt-6 mt-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900">Quick Stats</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-gray-50 p-4 rounded-lg text-center">
-                <p className="text-2xl font-bold text-gray-900">0</p>
-                <p className="text-sm text-gray-600">Liked Recipes</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg text-center">
-                <p className="text-2xl font-bold text-gray-900">0</p>
-                <p className="text-sm text-gray-600">Shopping Lists</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg text-center">
-                <p className="text-2xl font-bold text-gray-900">
-                  {Math.floor((new Date().getTime() - new Date(user?.created_at || '').getTime()) / (1000 * 60 * 60 * 24))}
-                </p>
-                <p className="text-sm text-gray-600">Days Member</p>
-              </div>
             </div>
           </div>
         </div>

@@ -710,7 +710,6 @@ func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func categoriesHandler(w http.ResponseWriter, r *http.Request) {
-	// 食材のカテゴリ件数
 	ingRows, err := db.Query(`
 		SELECT category, COUNT(*)
 		FROM ingredients
@@ -723,21 +722,21 @@ func categoriesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer ingRows.Close()
 
-	var ingCounts []CategoryCount
+	ingCounts := make(map[string]int)
 	for ingRows.Next() {
-		var c CategoryCount
-		if err := ingRows.Scan(&c.Category, &c.Count); err != nil {
+		var category string
+		var count int
+		if err := ingRows.Scan(&category, &count); err != nil {
 			http.Error(w, "Data scanning error", http.StatusInternalServerError)
 			return
 		}
-		ingCounts = append(ingCounts, c)
+		ingCounts[category] = count
 	}
 	if err := ingRows.Err(); err != nil {
 		http.Error(w, "Data scanning error", http.StatusInternalServerError)
 		return
 	}
 
-	// レシピのカテゴリ件数
 	recRows, err := db.Query(`
 		SELECT category, COUNT(*)
 		FROM recipes
@@ -750,23 +749,31 @@ func categoriesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer recRows.Close()
 
-	var recCounts []CategoryCount
+	recCounts := make(map[string]int)
 	for recRows.Next() {
-		var c CategoryCount
-		if err := recRows.Scan(&c.Category, &c.Count); err != nil {
+		var category string
+		var count int
+		if err := recRows.Scan(&category, &count); err != nil {
 			http.Error(w, "Data scanning error", http.StatusInternalServerError)
 			return
 		}
-		recCounts = append(recCounts, c)
+		recCounts[category] = count
 	}
 	if err := recRows.Err(); err != nil {
 		http.Error(w, "Data scanning error", http.StatusInternalServerError)
 		return
 	}
 
-	// JSONレスポンス（構造体ベース）
+	type CategoryCountsResponse struct {
+		IngredientCategories map[string]int `json:"ingredient_categories"`
+		RecipeCategories     map[string]int `json:"recipe_categories"`
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	resp := CategoryCountsResponse{IngredientCategories: ingCounts, RecipeCategories: recCounts}
+	resp := CategoryCountsResponse{
+		IngredientCategories: ingCounts,
+		RecipeCategories:     recCounts,
+	}
 	json.NewEncoder(w).Encode(resp)
 }
 

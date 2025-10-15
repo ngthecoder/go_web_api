@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface ShoppingItem {
   ingredient_id: number;
@@ -17,11 +18,6 @@ interface ShoppingListData {
   shopping_list: ShoppingItem[];
 }
 
-interface Recipe {
-  id: number;
-  name: string;
-}
-
 export default function ShoppingListPage() {
   const params = useParams();
   const [shoppingList, setShoppingList] = useState<ShoppingListData | null>(null);
@@ -29,12 +25,13 @@ export default function ShoppingListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ownedIngredients, setOwnedIngredients] = useState<number[]>([]);
+  const [ownedIngredientsDetails, setOwnedIngredientsDetails] = useState<ShoppingItem[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     const fetchRecipeName = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/recipes/${params.id}`);
+        const response = await fetch(API_ENDPOINTS.recipeById(String(params.id)));
         if (!response.ok) throw new Error('Recipe not found');
         const data = await response.json();
         setRecipeName(data.recipe.name);
@@ -54,8 +51,8 @@ export default function ShoppingListPage() {
     try {
       const ingredientIds = ownedIngredients.join(',');
       const url = ownedIngredients.length > 0
-        ? `http://localhost:8000/api/recipes/shopping-list/${params.id}?have_ingredients=${ingredientIds}`
-        : `http://localhost:8000/api/recipes/shopping-list/${params.id}`;
+        ? `${API_ENDPOINTS.shoppingList(String(params.id))}?have_ingredients=${ingredientIds}`
+        : API_ENDPOINTS.shoppingList(String(params.id));
       
       const response = await fetch(url);
       
@@ -75,12 +72,18 @@ export default function ShoppingListPage() {
     }
   };
 
-  const toggleIngredient = (ingredientId: number) => {
-    setOwnedIngredients(prev =>
-      prev.includes(ingredientId)
-        ? prev.filter(id => id !== ingredientId)
-        : [...prev, ingredientId]
-    );
+  const toggleIngredient = (item: ShoppingItem) => {
+    const ingredientId = item.ingredient_id;
+    
+    if (ownedIngredients.includes(ingredientId)) {
+      setOwnedIngredients(prev => prev.filter(id => id !== ingredientId));
+      setOwnedIngredientsDetails(prev => 
+        prev.filter(detail => detail.ingredient_id !== ingredientId)
+      );
+    } else {
+      setOwnedIngredients(prev => [...prev, ingredientId]);
+      setOwnedIngredientsDetails(prev => [...prev, item]);
+    }
   };
 
   const handleUpdateList = () => {
@@ -161,7 +164,7 @@ export default function ShoppingListPage() {
         </div>
       </div>
 
-      {shoppingList.shopping_list.length === 0 ? (
+      {shoppingList?.shopping_list === null || shoppingList?.shopping_list?.length === 0 ? (
         <div className="bg-green-50 border border-green-200 rounded-lg p-8 text-center">
           <svg className="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -178,7 +181,7 @@ export default function ShoppingListPage() {
           <div className="p-6 border-b">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">
-                Items to Buy ({shoppingList.shopping_list.length})
+                Items to Buy ({shoppingList?.shopping_list?.length})
               </h2>
               <button
                 onClick={handlePrint}
@@ -193,7 +196,7 @@ export default function ShoppingListPage() {
           </div>
 
           <div className="divide-y">
-            {shoppingList.shopping_list.map((item, index) => (
+            {shoppingList?.shopping_list?.map((item, index) => (
               <label
                 key={item.ingredient_id}
                 className="flex items-start p-4 hover:bg-gray-50 cursor-pointer transition-colors"
@@ -201,7 +204,7 @@ export default function ShoppingListPage() {
                 <input
                   type="checkbox"
                   checked={ownedIngredients.includes(item.ingredient_id)}
-                  onChange={() => toggleIngredient(item.ingredient_id)}
+                  onChange={() => toggleIngredient(item)}
                   className="mt-1 mr-4 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <div className="flex-1">
@@ -230,29 +233,26 @@ export default function ShoppingListPage() {
         </div>
       )}
 
-      {ownedIngredients.length > 0 && (
+      {ownedIngredientsDetails.length > 0 && (
         <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
           <h3 className="text-sm font-medium text-gray-700 mb-2">
-            Ingredients you have ({ownedIngredients.length}):
+            Ingredients you have ({ownedIngredientsDetails.length}):
           </h3>
           <div className="flex flex-wrap gap-2">
-            {ownedIngredients.map(id => {
-              const item = shoppingList.shopping_list.find(i => i.ingredient_id === id);
-              return item ? (
-                <span
-                  key={id}
-                  className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+            {ownedIngredientsDetails.map(item => (
+              <span
+                key={item.ingredient_id}
+                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+              >
+                {item.name}
+                <button
+                  onClick={() => toggleIngredient(item)}
+                  className="ml-2 hover:text-blue-600"
                 >
-                  {item.name}
-                  <button
-                    onClick={() => toggleIngredient(id)}
-                    className="ml-2 hover:text-blue-600"
-                  >
-                    ×
-                  </button>
-                </span>
-              ) : null;
-            })}
+                  ×
+                </button>
+              </span>
+            ))}
           </div>
         </div>
       )}

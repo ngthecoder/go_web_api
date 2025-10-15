@@ -1,5 +1,19 @@
 # Go Recipe Web API + Next.js
-A web application using Go backend API and Next.js frontend with user authentication
+A production-ready full-stack web application using Go backend API and Next.js frontend with user authentication, built as a portfolio project to demonstrate modern web development skills.
+
+## Quick Demo
+
+**Live Demo**: Coming soon
+
+## Key Features
+
+- 🔐 **Secure Authentication**: JWT tokens with Argon2 password hashing
+- 🍳 **Recipe Discovery**: Find recipes based on ingredients you have
+- ❤️ **Personal Collection**: Save and manage your favorite recipes
+- 🛒 **Smart Shopping Lists**: Generate shopping lists from recipes
+- 📱 **Responsive Design**: Works seamlessly on mobile and desktop
+- ✅ **Tested**: 40% test coverage focusing on critical security features
+- 🐳 **Containerized**: Docker setup for consistent deployment
 
 ## Project Purpose
 - Learn Web API development using Go language
@@ -12,7 +26,7 @@ A web application using Go backend API and Next.js frontend with user authentica
 - **Frontend**: Next.js 15.5.0 + React 19.1.0 + TypeScript + Tailwind CSS 4
 - **Database**: SQLite3 (for local development)
 - **Authentication**: JWT tokens with Argon2 password hashing
-- **Deployment**: Docker + AWS ECS with Terraform
+- **Deployment**: Docker + AWS Fargate with Terraform
 
 ## Prerequisites
 Before starting, ensure the following are installed:
@@ -550,69 +564,134 @@ frontend/
 - **Protected Routes**: ProtectedRoute HOC prevents unauthorized access
 - **Error Boundaries**: Graceful error handling in AuthContext
 
-## Features
+## 🎯 Current Project Status
 
-### Core Features
-1. **Recipe Management**: Browse, search, and filter recipes by various criteria
-2. **Ingredient Management**: Browse ingredients with detailed nutritional information
-3. **Recipe Discovery**: Find recipes based on available ingredients with match scoring
-4. **Shopping Lists**: Generate shopping lists for recipes based on available ingredients
-5. **User Authentication**: Secure user registration and login system with validation
-6. **User Profiles**: Personal user accounts with profile management and statistics
-7. **Liked Recipes**: Users can save and manage their favorite recipes with real-time updates
-8. **Optional Authentication**: Browse recipes and ingredients without account (like feature requires login)
-9. **Protected Routes**: Client-side route protection for authenticated-only pages
-10. **Responsive Design**: Mobile-friendly interface with Tailwind CSS 4
+### ✅ Completed Features
 
-### User Stories
-1. **Browse Recipes**: Users can search and filter recipes by category, difficulty, cooking time
-2. **Find Recipes by Ingredients**: Users can select available ingredients and find matching recipes
-3. **View Details**: Users can view detailed recipe instructions and ingredient requirements
-4. **User Registration**: New users can create accounts securely with validation
-5. **User Login**: Existing users can log in with password visibility toggle
-6. **User Profile Management**: Users can view their profile information and statistics
-7. **Like Recipes**: Authenticated users can like/unlike recipes with real-time UI updates
-8. **Liked Recipes Collection**: Users can view and manage all their liked recipes
-9. **Generate Shopping Lists**: Users can create shopping lists for recipes they want to make
-10. **Bidirectional Navigation**: Navigate between ingredients and recipes seamlessly
-11. **Anonymous Browsing**: Browse content without authentication (limited features)
+#### Backend (Go)
+- ✅ **Authentication System**
+  - User registration with validation
+  - Login with JWT tokens
+  - Password hashing with Argon2
+  - Protected route middleware
+  - Optional authentication support
+  
+- ✅ **Recipe Management**
+  - Browse recipes with search, filtering, sorting
+  - Recipe details with ingredients
+  - Find recipes by available ingredients
+  - Match scoring algorithm
+  - Shopping list generation
+  - Pagination support
+  
+- ✅ **Ingredient Management**
+  - Browse ingredients with filters
+  - Ingredient details with related recipes
+  - Category-based organization
+  
+- ✅ **User Features**
+  - User profiles
+  - Like/unlike recipes
+  - View liked recipes collection
+  - User statistics
+  
+- ✅ **Database**
+  - SQLite3 for development
+  - Normalized schema (5 tables)
+  - Proper foreign key relationships
+  - Database indexes for performance
+  
+- ✅ **Testing**
+  - 40% test coverage
+  - Authentication security tests
+  - Recipe business logic tests
+  - In-memory test databases
+  - Table-driven test patterns
 
-### Use Cases
+#### Frontend (Next.js)
+- ✅ **Pages**
+  - Home page with recipe browsing
+  - Recipe detail page
+  - Ingredient listing and detail pages
+  - Find recipes by ingredients
+  - User registration and login
+  - User profile page
+  - Liked recipes page
+  
+- ✅ **Components**
+  - Navigation with auth dropdown
+  - LikeButton component
+  - ProtectedRoute wrapper
+  - Responsive design (mobile-friendly)
+  
+- ✅ **State Management**
+  - AuthContext for global auth state
+  - Local storage for token persistence
+  - Real-time UI updates for likes
+  
+- ✅ **Features**
+  - Client-side form validation
+  - Password visibility toggle
+  - Automatic redirect after login
+  - Anonymous browsing support
+  - Protected routes with auth guards
 
-**Scenario 1: New User Registration**
-1. User visits the application
-2. Clicks "Register" in navigation
-3. Fills out username, email, and password with real-time validation
-4. System validates: username (3+ chars, alphanumeric), email format, password (6+ chars)
-5. Password confirmation must match
-6. System creates account with Argon2 hashed password and logs user in automatically
-7. User redirected to home page or intended destination
+### 🚧 In Progress / Next Steps
 
-**Scenario 2: Recipe Discovery Workflow**
-1. User selects "Find Recipes" from navigation
-2. Searches and selects available ingredients (e.g., tomato, onion, rice)
-3. System shows matching recipes with match scores and like status
-4. User can like recipes (requires authentication)
-5. User clicks on recipe to view full instructions and ingredients
-6. User can generate shopping list for missing ingredients
+#### Week 1-2: Production Ready (Current Phase)
+- [ ] **Docker Setup**
+  - Dockerfile for backend
+  - Dockerfile for frontend
+  - docker-compose.yml for local development
+  - Multi-stage builds for optimization
+  
+- [ ] **PostgreSQL Migration**
+  - Migrate from SQLite to PostgreSQL
+  - Update connection strings
+  - Test all queries work with PostgreSQL
+  - Update SQL syntax differences
 
-**Scenario 3: User Profile and Liked Recipes**
-1. User logs into their account
-2. Navigates to profile page to view account information and statistics
-3. Browses through recipe catalog
-4. Clicks heart icon on recipes to add to liked list
-5. Views liked recipes collection at /liked-recipes
-6. Can remove recipes by clicking heart icon again
-7. UI updates in real-time across all pages
+#### Week 3-5: AWS Production Deployment
+- [ ] **Infrastructure as Code**
+  - Terraform configuration
+  - VPC and networking setup
+  - RDS PostgreSQL configuration
+  - ECR for container registry
+  - ECS Fargate for containers
+  - CloudFront for CDN
+  
+- [ ] **CI/CD Pipeline**
+  - GitHub Actions workflow
+  - Automated testing
+  - Automated deployment
+  - Environment management
 
-**Scenario 4: Anonymous User Experience**
-1. Anonymous user browses recipes and ingredients
-2. Attempts to like a recipe by clicking heart icon
-3. System redirects to login page with message "Log in to save your favorite recipes"
-4. After login, user is redirected back to the original page
-5. Can now like recipes and access full features
+#### Week 6: Polish & Documentation
+- [ ] Architecture diagrams
+- [ ] API documentation
+- [ ] Learning story document
+- [ ] Screenshots and demo video
+- [ ] Update resume with achievements
 
-## Team Development Workflow
+### ⏳ Future Enhancements (Post-Job Hunt)
+
+- [ ] Email verification for new accounts
+- [ ] Password reset functionality  
+- [ ] Recipe rating and review system
+- [ ] User-generated recipe content
+- [ ] Recipe collections/folders
+- [ ] Meal planning features
+- [ ] Shopping list management
+- [ ] Social features (follow users, share recipes)
+- [ ] Mobile app (React Native)
+- [ ] Advanced search with filters
+- [ ] Recipe recommendations (ML)
+- [ ] Nutrition tracking
+- [ ] Image upload for recipes
+- [ ] Comments on recipes
+- [ ] Print-friendly recipe view
+
+## Getting Started
 
 ### Backend Tasks (Completed)
 - ✅ Database schema design and implementation with indexes
@@ -1163,3 +1242,70 @@ backend/
     - Pre-commit hooks
     - Code coverage reports
     - API versioning
+
+## Testing
+
+### Quick Start
+```bash
+cd backend
+
+# Run all tests
+go test ./... -v
+
+# Run with coverage report
+go test ./... -cover
+```
+
+### Test Coverage
+- **Overall Coverage**: ~40% (focusing on critical paths)
+- **Authentication**: 45% - Password hashing, JWT validation, user registration
+- **Recipe Service**: 35% - Database queries, recipe retrieval
+- **Strategy**: Prioritize testing security-critical code and core business logic
+
+### Test Structure
+```
+backend/
+└── internal/
+   ├── auth/
+   │   ├── services.go
+   │   └── services_test.go       # 4 auth security tests
+   └── recipes/
+       ├── services.go
+       └── services_test.go       # 3 recipe logic tests
+```
+
+### Running Specific Tests
+```bash
+# Run only auth tests
+go test ./internal/auth -v
+
+# Run only recipe tests  
+go test ./internal/recipes -v
+
+# Run tests with coverage report
+go test ./internal/auth -cover
+go test ./internal/recipes -cover
+
+# Generate HTML coverage report
+go test ./... -coverprofile=coverage.out
+go tool cover -html=coverage.out
+```
+
+## API Rate Limiting (Planned)
+
+### Rate Limit Strategy
+- **Anonymous Users**: 100 requests per hour
+- **Authenticated Users**: 1000 requests per hour
+- **Sliding Window**: 1-hour window with gradual reset
+
+### Implementation
+```go
+// Rate limiting middleware (to be implemented)
+func rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        // Check rate limit based on IP or user ID
+        // Return 429 Too Many Requests if exceeded
+        next(w, r)
+    }
+}
+```

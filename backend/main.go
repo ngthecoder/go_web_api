@@ -844,17 +844,33 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("No .env file found, using environment variables")
 	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 	dbPath := os.Getenv("DATABASE_PATH")
 	port := os.Getenv("PORT")
 	allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
+
 	if jwtSecret == "" {
-		log.Fatal("Missing JWT_SECRET attribute in .env file")
+		log.Fatal("Missing JWT_SECRET attribute")
 	}
-	log.Println("Successfully loaded JWT_SECRET from .env file")
+	log.Println("Successfully loaded JWT_SECRET")
+
+	if dbPath == "" {
+		log.Fatal("Missing DATABASE_PATH attribute")
+	}
+	log.Println("Successfully loaded DATABASE_PATH")
+
+	if port == "" {
+		log.Fatal("Missing PORT attribute")
+	}
+	log.Println("Successfully loaded PORT")
+
+	if len(allowedOrigins) == 0 {
+		log.Fatal("Missing ALLOWED_ORIGINS attribute")
+	}
+	log.Println("Successfully loaded ALLOWED_ORIGINS")
 
 	initDB(dbPath)
 	populateTestData()

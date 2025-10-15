@@ -1,18 +1,19 @@
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
+
+RUN apk add --no-cache gcc musl-dev sqlite-dev
 
 WORKDIR /app
 
-COPY go.mod ./
-COPY go.su[m] ./
+COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o main .
 
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates sqlite-libs
 
 WORKDIR /root/
 

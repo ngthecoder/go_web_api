@@ -47,7 +47,7 @@ func (s *AuthService) registerUser(registerRequest RegisterRequest) (*AuthRespon
 		return nil, err
 	}
 
-	query := "INSERT INTO users (id, username, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'));"
+	query := "INSERT INTO users (id, username, email, password_hash, created_at, updated_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);"
 	_, err = s.db.Exec(query, uuid, registerRequest.Username, registerRequest.Email, encodedPasswordHash)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (s *AuthService) registerUser(registerRequest RegisterRequest) (*AuthRespon
 
 func (s *AuthService) userExists(email, username string) (bool, error) {
 	var count int
-	query := `SELECT COUNT(*) FROM users WHERE email = ? OR username = ?`
+	query := `SELECT COUNT(*) FROM users WHERE email = $1 OR username = $2`
 	err := s.db.QueryRow(query, email, username).Scan(&count)
 	return count > 0, err
 }
@@ -104,7 +104,7 @@ func (s *AuthService) loginUser(loginRequest LoginRequest) (*AuthResponse, error
 
 func (s *AuthService) verifyPassword(email string, password string) (bool, error) {
 	storedEncodedPasswordHash := ""
-	query := "SELECT password_hash FROM users WHERE email = ?;"
+	query := "SELECT password_hash FROM users WHERE email = $1;"
 	err := s.db.QueryRow(query, email).Scan(&storedEncodedPasswordHash)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -118,7 +118,7 @@ func (s *AuthService) verifyPassword(email string, password string) (bool, error
 
 func (s *AuthService) getUserByEmail(email string) (*User, error) {
 	var user User
-	query := `SELECT id, username, email, created_at, updated_at FROM users WHERE email = ?`
+	query := `SELECT id, username, email, created_at, updated_at FROM users WHERE email = $1`
 
 	err := s.db.QueryRow(query, email).Scan(
 		&user.ID, &user.Username, &user.Email, &user.CreatedAt, &user.UpdatedAt,

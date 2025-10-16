@@ -66,7 +66,7 @@ func (s *IngredientsService) ingredientDetailsWithRecipesRetriever(ingredientID 
         LEFT JOIN
             recipes AS r ON ri.recipe_id = r.id
         WHERE
-            i.id = ?;
+            i.id = $1;
     `
 
 	rows, err := s.db.Query(query, ingredientID)
@@ -138,13 +138,13 @@ func (s *IngredientsService) buildIngredientCountQuery(search, category string) 
 	args := []interface{}{}
 
 	if search != "" {
-		conditions = append(conditions, "(name LIKE ? OR description LIKE ?)")
+		conditions = append(conditions, "(name LIKE $1 OR description LIKE $2)")
 		searchTerm := "%" + search + "%"
 		args = append(args, searchTerm, searchTerm)
 	}
 
 	if category != "" {
-		conditions = append(conditions, "category = ?")
+		conditions = append(conditions, "category = $1")
 		args = append(args, category)
 	}
 
@@ -161,13 +161,13 @@ func (s *IngredientsService) buildIngredientQuery(search, category, sort, order 
 	args := []interface{}{}
 
 	if search != "" {
-		conditions = append(conditions, "(name LIKE ? OR description LIKE ?)")
+		conditions = append(conditions, "(name LIKE $1 OR description LIKE $2)")
 		searchTerm := "%" + search + "%"
 		args = append(args, searchTerm, searchTerm)
 	}
 
 	if category != "" {
-		conditions = append(conditions, "category = ?")
+		conditions = append(conditions, "category = $1")
 		args = append(args, category)
 	}
 
@@ -184,7 +184,7 @@ func (s *IngredientsService) buildIngredientQuery(search, category, sort, order 
 	}
 
 	query += " ORDER BY " + orderByClause + " " + strings.ToUpper(order)
-	query += " LIMIT ? OFFSET ?"
+	query += " LIMIT $1 OFFSET $2"
 	args = append(args, limit, offset)
 
 	return query, args

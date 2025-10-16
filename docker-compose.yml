@@ -13,6 +13,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - recipe-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recipeuser -d recipes"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -21,7 +26,8 @@ services:
     container_name: recipe-backend
     restart: unless-stopped
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       DATABASE_PATH: postgres://recipeuser:recipepassword@postgres:5432/recipes?sslmode=disable
       JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
@@ -31,6 +37,12 @@ services:
       - "8000:8000"
     networks:
       - recipe-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/stats"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
   
   frontend:
     build:
@@ -39,13 +51,20 @@ services:
     container_name: recipe-frontend
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
     ports:
       - "3000:3000"
     networks:
       - recipe-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
 volumes:
   postgres_data:

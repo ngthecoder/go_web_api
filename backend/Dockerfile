@@ -21,4 +21,7 @@ COPY --from=builder /app/main .
 
 EXPOSE 8000
 
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/api/stats || exit 1
+
 CMD ["./main"]

@@ -158,10 +158,6 @@ func createIndexes() {
 }
 
 func populateTestData() {
-	db.Exec("DELETE FROM recipe_ingredients")
-	db.Exec("DELETE FROM recipes")
-	db.Exec("DELETE FROM ingredients")
-
 	ingredientsData := []struct {
 		name        string
 		category    string
@@ -307,7 +303,6 @@ func populateTestData() {
 		}
 	}
 
-	// Comprehensive English recipes data
 	recipesData := []struct {
 		name         string
 		category     string

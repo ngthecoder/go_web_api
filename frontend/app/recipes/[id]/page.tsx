@@ -132,7 +132,7 @@ export default function RecipeDetailPage() {
           <div className="bg-white rounded-lg shadow-sm border p-6 h-full flex flex-col">
             <h2 className="text-2xl font-semibold mb-4">Ingredients</h2>
             <ul className="space-y-3 flex-1">
-              {ingredients.map(ing => (
+              {ingredients?.map(ing => (
                 <li key={ing.ingredient_id} className="flex justify-between items-start">
                   <Link 
                     href={`/ingredients/${ing.ingredient_id}`}
@@ -147,7 +147,7 @@ export default function RecipeDetailPage() {
               ))}
             </ul>
 
-            {ingredients.length > 0 && (
+            {ingredients?.length > 0 && (
               <Link 
                 href={`/recipes/shopping-list/${recipe.id}`}
                 className="mt-6 block w-full text-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"

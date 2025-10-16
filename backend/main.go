@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 	"github.com/ngthecoder/go_web_api/internal/auth"
 	"github.com/ngthecoder/go_web_api/internal/ingredients"
 	"github.com/ngthecoder/go_web_api/internal/recipes"
@@ -38,22 +38,23 @@ type CategoryCountsResponse struct {
 	RecipeCategories     []CategoryCount `json:"recipe_categories"`
 }
 
-func initDB(dbPath string) {
+func initDB(dbURL string) {
 	var err error
-	db, err = sql.Open("sqlite3", dbPath)
+
+	db, err = sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	db.Exec("DROP TABLE IF EXISTS recipe_ingredients")
-	db.Exec("DROP TABLE IF EXISTS recipes")
-	db.Exec("DROP TABLE IF EXISTS ingredients")
-	db.Exec("DROP TABLE IF EXISTS users")
-	db.Exec("DROP TABLE IF EXISTS user_liked_recipes")
+	db.Exec("DROP TABLE IF EXISTS recipe_ingredients CASCADE")
+	db.Exec("DROP TABLE IF EXISTS recipes CASCADE")
+	db.Exec("DROP TABLE IF EXISTS ingredients CASCADE")
+	db.Exec("DROP TABLE IF EXISTS users CASCADE")
+	db.Exec("DROP TABLE IF EXISTS user_liked_recipes CASCADE")
 
 	createIngredientsTable := `
 		CREATE TABLE IF NOT EXISTS ingredients (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id SERIAL PRIMARY KEY,
 			name TEXT NOT NULL,
 			category TEXT NOT NULL,
 			calories_per_100g INTEGER NOT NULL,
@@ -63,7 +64,7 @@ func initDB(dbPath string) {
 
 	createRecipesTable := `
 		CREATE TABLE IF NOT EXISTS recipes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id SERIAL PRIMARY KEY,
 			name TEXT NOT NULL,
 			category TEXT NOT NULL,
 			prep_time_minutes INTEGER NOT NULL,
@@ -94,8 +95,8 @@ func initDB(dbPath string) {
 			username TEXT UNIQUE NOT NULL,
 			email TEXT UNIQUE NOT NULL,
 			password_hash TEXT NOT NULL,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);
 	`
 
@@ -103,7 +104,7 @@ func initDB(dbPath string) {
 		CREATE TABLE IF NOT EXISTS user_liked_recipes (
 			user_id TEXT NOT NULL,
 			recipe_id INTEGER NOT NULL,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (user_id, recipe_id),
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
 			FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
@@ -163,7 +164,6 @@ func populateTestData() {
 	db.Exec("DELETE FROM recipes")
 	db.Exec("DELETE FROM ingredients")
 
-	// Comprehensive English ingredients data
 	ingredientsData := []struct {
 		name        string
 		category    string
@@ -302,7 +302,7 @@ func populateTestData() {
 	}
 
 	for _, ing := range ingredientsData {
-		_, err := db.Exec("INSERT INTO ingredients (name, category, calories_per_100g, description) VALUES (?, ?, ?, ?)",
+		_, err := db.Exec("INSERT INTO ingredients (name, category, calories_per_100g, description) VALUES ($1, $2, $3, $4)",
 			ing.name, ing.category, ing.calories, ing.description)
 		if err != nil {
 			log.Printf("Error adding %s to ingredients table: %v", ing.name, err)
@@ -456,14 +456,13 @@ func populateTestData() {
 
 	for _, rec := range recipesData {
 		_, err := db.Exec(`INSERT INTO recipes (name, category, prep_time_minutes, cook_time_minutes, servings, difficulty, instructions, description) 
-						  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+						  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 			rec.name, rec.category, rec.prepTime, rec.cookTime, rec.servings, rec.difficulty, rec.instructions, rec.description)
 		if err != nil {
 			log.Printf("Error adding %s to recipes table: %v", rec.name, err)
 		}
 	}
 
-	// Comprehensive recipe-ingredient relationships
 	recipeIngredientsData := []struct {
 		recipeID     int
 		ingredientID int
@@ -668,14 +667,14 @@ func populateTestData() {
 
 	for _, ri := range recipeIngredientsData {
 		_, err := db.Exec(`INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, notes) 
-						  VALUES (?, ?, ?, ?, ?)`,
+						  VALUES ($1, $2, $3, $4, $5)`,
 			ri.recipeID, ri.ingredientID, ri.quantity, ri.unit, ri.notes)
 		if err != nil {
 			log.Printf("Error adding recipe_ingredients relationship: %v", err)
 		}
 	}
 
-	fmt.Println("Enhanced English test data populated successfully!")
+	fmt.Println("Test data populated successfully!")
 }
 
 func enableCORS(allowedOrigins []string, next http.HandlerFunc) http.HandlerFunc {

@@ -49,8 +49,6 @@ func initDB(dbURL string) {
 	db.Exec("DROP TABLE IF EXISTS recipe_ingredients CASCADE")
 	db.Exec("DROP TABLE IF EXISTS recipes CASCADE")
 	db.Exec("DROP TABLE IF EXISTS ingredients CASCADE")
-	db.Exec("DROP TABLE IF EXISTS users CASCADE")
-	db.Exec("DROP TABLE IF EXISTS user_liked_recipes CASCADE")
 
 	createIngredientsTable := `
 		CREATE TABLE IF NOT EXISTS ingredients (

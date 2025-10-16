@@ -188,7 +188,7 @@ export default function StatsPage() {
       <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
         <h2 className="text-xl font-semibold mb-6">Recipe Difficulty Distribution</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {difficultyPercentages.map((item) => (
+          {difficultyPercentages?.map((item) => (
             <div
               key={item.name}
               className="relative overflow-hidden rounded-lg border-2 border-gray-200 p-6 hover:border-blue-400 transition-colors"

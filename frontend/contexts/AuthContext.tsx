@@ -67,7 +67,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (storedToken && storedUser) {
           if (isTokenExpired(storedToken)) {
-            console.log('Token expired, clearing auth state');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             setToken(null);

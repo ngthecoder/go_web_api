@@ -3,6 +3,7 @@ package recipes
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/ngthecoder/go_web_api/internal/errors"
@@ -74,8 +75,8 @@ func (s *RecipesService) recipeDetailsWithIngredientsRetriever(id int, userID st
 			r.servings, r.difficulty, r.instructions, r.description,
 			CASE WHEN ulr.user_id IS NOT NULL THEN 1 ELSE 0 END as is_liked
 		FROM recipes r
-		LEFT JOIN user_liked_recipes ulr ON r.id = ulr.recipe_id AND ulr.user_id = ?
-		WHERE r.id = ?
+		LEFT JOIN user_liked_recipes ulr ON r.id = ulr.recipe_id AND ulr.user_id = $1
+		WHERE r.id = $2
 	`
 
 	err := s.db.QueryRow(query, userID, id).
@@ -93,7 +94,7 @@ func (s *RecipesService) recipeDetailsWithIngredientsRetriever(id int, userID st
 		SELECT i.id, i.name, ri.quantity, ri.unit, ri.notes
 		FROM recipe_ingredients ri
 		JOIN ingredients i ON ri.ingredient_id = i.id
-		WHERE ri.recipe_id = ?`, id)
+		WHERE ri.recipe_id = $1`, id)
 	if err != nil {
 		return Recipe{}, nil, errors.NewInternalServerError("Database error", err)
 	}
@@ -119,10 +120,13 @@ func (s *RecipesService) matchedRecipesRetriever(matchType string, ingredientIDs
 	sqlQuery := ""
 	args := []interface{}{}
 
+	placeholderNum := 2
+
 	placeholders := make([]string, 0, len(ingredientIDs))
 	for _, ingredientID := range ingredientIDs {
-		placeholders = append(placeholders, "?")
+		placeholders = append(placeholders, "$"+strconv.Itoa(placeholderNum))
 		args = append(args, ingredientID)
+		placeholderNum++
 	}
 
 	args = append(args, userID)
@@ -139,12 +143,12 @@ func (s *RecipesService) matchedRecipesRetriever(matchType string, ingredientIDs
 				CASE WHEN ulr.user_id IS NOT NULL THEN 1 ELSE 0 END as is_liked
 			FROM recipes r
 			JOIN recipe_ingredients ri on r.id = ri.recipe_id
-			LEFT JOIN user_liked_recipes ulr ON r.id = ulr.recipe_id AND ulr.user_id = ?
+			LEFT JOIN user_liked_recipes ulr ON r.id = ulr.recipe_id AND ulr.user_id = $1
 			WHERE ri.ingredient_id in (%s)
 			GROUP BY r.id, r.name, r.category, r.prep_time_minutes, r.cook_time_minutes, r.servings, r.difficulty, r.instructions, r.description, ulr.user_id
 			ORDER BY match_ingredients_count DESC, total_ingredients_count ASC
-			LIMIT ?
-		`, strings.Join(placeholders, ","))
+			LIMIT $%d
+		`, strings.Join(placeholders, ","), placeholderNum)
 	}
 
 	if matchType == "exact" {
@@ -158,13 +162,13 @@ func (s *RecipesService) matchedRecipesRetriever(matchType string, ingredientIDs
 				CASE WHEN ulr.user_id IS NOT NULL THEN 1 ELSE 0 END as is_liked
 			FROM recipes r
 			JOIN recipe_ingredients ri on r.id = ri.recipe_id
-			LEFT JOIN user_liked_recipes ulr ON r.id = ulr.recipe_id AND ulr.user_id = ?
+			LEFT JOIN user_liked_recipes ulr ON r.id = ulr.recipe_id AND ulr.user_id = $1
 			WHERE ri.ingredient_id in (%s)
 			GROUP BY r.id, r.name, r.category, r.prep_time_minutes, r.cook_time_minutes, r.servings, r.difficulty, r.instructions, r.description, ulr.user_id
 			HAVING COUNT(ri.ingredient_id) = (SELECT COUNT(*) FROM recipe_ingredients WHERE recipe_id = r.id)
 			ORDER BY match_ingredients_count DESC, total_ingredients_count ASC
-			LIMIT ?
-		`, strings.Join(placeholders, ","))
+			LIMIT $%d
+		`, strings.Join(placeholders, ","), placeholderNum)
 	}
 
 	rows, err := s.db.Query(sqlQuery, args...)
@@ -216,7 +220,7 @@ func (s *RecipesService) shoppingListRetriever(recipeID int, haveIngredientIDs m
 		JOIN
 			ingredients AS i ON ri.ingredient_id = i.id
 		WHERE
-			ri.recipe_id = ?;
+			ri.recipe_id = $1;
 	`
 
 	rows, err := s.db.Query(query, recipeID)
@@ -258,25 +262,31 @@ func (s *RecipesService) buildRecipeCountQuery(search, category, difficulty stri
 	conditions := []string{}
 	args := []interface{}{}
 
+	placeholderNum := 1
+
 	if search != "" {
-		conditions = append(conditions, "(name LIKE ? OR instructions LIKE ? OR description LIKE ?)")
+		conditions = append(conditions, fmt.Sprintf("(name LIKE $%d OR instructions LIKE $%d OR description LIKE $%d)", placeholderNum, placeholderNum+1, placeholderNum+2))
 		searchTerm := "%" + search + "%"
 		args = append(args, searchTerm, searchTerm, searchTerm)
+		placeholderNum += 3
 	}
 
 	if category != "" {
-		conditions = append(conditions, "category = ?")
+		conditions = append(conditions, fmt.Sprintf("category = $%d", placeholderNum))
 		args = append(args, category)
+		placeholderNum++
 	}
 
 	if difficulty != "" {
-		conditions = append(conditions, "difficulty = ?")
+		conditions = append(conditions, fmt.Sprintf("difficulty = $%d", placeholderNum))
 		args = append(args, difficulty)
+		placeholderNum++
 	}
 
 	if maxTime > 0 {
-		conditions = append(conditions, "(prep_time_minutes + cook_time_minutes) <= ?")
+		conditions = append(conditions, fmt.Sprintf("(prep_time_minutes + cook_time_minutes) <= $%d", placeholderNum))
 		args = append(args, maxTime)
+		placeholderNum++
 	}
 
 	if len(conditions) > 0 {
@@ -287,37 +297,37 @@ func (s *RecipesService) buildRecipeCountQuery(search, category, difficulty stri
 }
 
 func (s *RecipesService) buildRecipeQuery(search, category, difficulty, sort, order string, maxTime, limit, offset int, userID string) (string, []interface{}) {
-	query := `
-		SELECT 
-			r.id, r.name, r.category, r.prep_time_minutes, r.cook_time_minutes, 
-			r.servings, r.difficulty, r.instructions, r.description,
-			CASE WHEN ulr.user_id IS NOT NULL THEN 1 ELSE 0 END as is_liked
-		FROM recipes r
-		LEFT JOIN user_liked_recipes ulr ON r.id = ulr.recipe_id AND ulr.user_id = ?
-	`
+	placeholderNum := 1
+
+	query := fmt.Sprintf("SELECT r.id, r.name, r.category, r.prep_time_minutes, r.cook_time_minutes, r.servings, r.difficulty, r.instructions, r.description, CASE WHEN ulr.user_id IS NOT NULL THEN 1 ELSE 0 END as is_liked FROM recipes r LEFT JOIN user_liked_recipes ulr ON r.id = ulr.recipe_id AND ulr.user_id = $%d", placeholderNum)
+	placeholderNum++
 
 	conditions := []string{}
 	args := []interface{}{userID}
 
 	if search != "" {
-		conditions = append(conditions, "(r.name LIKE ? OR r.instructions LIKE ? OR r.description LIKE ?)")
+		conditions = append(conditions, fmt.Sprintf("(r.name LIKE $%d OR r.instructions LIKE $%d OR r.description LIKE $%d)", placeholderNum, placeholderNum+1, placeholderNum+2))
 		searchTerm := "%" + search + "%"
 		args = append(args, searchTerm, searchTerm, searchTerm)
+		placeholderNum += 3
 	}
 
 	if category != "" {
-		conditions = append(conditions, "r.category = ?")
+		conditions = append(conditions, fmt.Sprintf("r.category = $%d", placeholderNum))
 		args = append(args, category)
+		placeholderNum++
 	}
 
 	if difficulty != "" {
-		conditions = append(conditions, "r.difficulty = ?")
+		conditions = append(conditions, fmt.Sprintf("r.difficulty = $%d", placeholderNum))
 		args = append(args, difficulty)
+		placeholderNum++
 	}
 
 	if maxTime > 0 {
-		conditions = append(conditions, "(r.prep_time_minutes + r.cook_time_minutes) <= ?")
+		conditions = append(conditions, fmt.Sprintf("(r.prep_time_minutes + r.cook_time_minutes) <= $%d", placeholderNum))
 		args = append(args, maxTime)
+		placeholderNum++
 	}
 
 	if len(conditions) > 0 {
@@ -341,7 +351,7 @@ func (s *RecipesService) buildRecipeQuery(search, category, difficulty, sort, or
 	}
 
 	query += " ORDER BY " + orderByClause + " " + strings.ToUpper(order)
-	query += " LIMIT ? OFFSET ?"
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", placeholderNum, placeholderNum+1)
 	args = append(args, limit, offset)
 
 	return query, args

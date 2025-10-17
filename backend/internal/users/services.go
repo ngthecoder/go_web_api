@@ -20,7 +20,7 @@ func NewUserService(db *sql.DB) *UserService {
 
 func (s *UserService) getUserProfile(userID string) (UserProfile, error) {
 	var userProfile UserProfile
-	err := s.db.QueryRow("SELECT id, username, email, created_at, updated_at FROM users WHERE id = ?", userID).
+	err := s.db.QueryRow("SELECT id, username, email, created_at, updated_at FROM users WHERE id = $1", userID).
 		Scan(&userProfile.ID, &userProfile.Username, &userProfile.Email, &userProfile.CreatedAt, &userProfile.UpdatedAt)
 
 	if err == sql.ErrNoRows {
@@ -38,7 +38,7 @@ func (s *UserService) getLikedRecipes(userID string) ([]recipes.Recipe, error) {
 		SELECT r.id, r.name, r.category, r.prep_time_minutes, r.cook_time_minutes, r.servings, r.difficulty, r.instructions, r.description
 		FROM user_liked_recipes ulr
 		JOIN recipes r on ulr.recipe_id = r.id
-		WHERE ulr.user_id = ?;
+		WHERE ulr.user_id = $1;
 	`
 	rows, err := s.db.Query(query, userID)
 	if err != nil {
@@ -64,7 +64,7 @@ func (s *UserService) getLikedRecipes(userID string) ([]recipes.Recipe, error) {
 
 func (s *UserService) addLikedRecipe(userID string, recipeID int) error {
 	var exists bool
-	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM recipes WHERE id = ?)", recipeID).Scan(&exists)
+	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM recipes WHERE id = $1)", recipeID).Scan(&exists)
 	if err != nil {
 		return errors.NewInternalServerError("Database error", err)
 	}
@@ -72,7 +72,7 @@ func (s *UserService) addLikedRecipe(userID string, recipeID int) error {
 		return errors.NewNotFoundError("Recipe not found")
 	}
 
-	err = s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM user_liked_recipes WHERE user_id = ? AND recipe_id = ?)", userID, recipeID).Scan(&exists)
+	err = s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM user_liked_recipes WHERE user_id = $1 AND recipe_id = $2)", userID, recipeID).Scan(&exists)
 	if err != nil {
 		return errors.NewInternalServerError("Database error", err)
 	}
@@ -80,7 +80,7 @@ func (s *UserService) addLikedRecipe(userID string, recipeID int) error {
 		return errors.NewConflictError("Recipe already in liked list")
 	}
 
-	_, err = s.db.Exec("INSERT INTO user_liked_recipes (user_id, recipe_id, created_at) VALUES (?, ?, datetime('now'));", userID, recipeID)
+	_, err = s.db.Exec("INSERT INTO user_liked_recipes (user_id, recipe_id, created_at) VALUES ($1, $2, CURRENT_TIMESTAMP);", userID, recipeID)
 	if err != nil {
 		return errors.NewInternalServerError("Failed to add liked recipe", err)
 	}
@@ -89,7 +89,7 @@ func (s *UserService) addLikedRecipe(userID string, recipeID int) error {
 }
 
 func (s *UserService) removeLikedRecipe(userID string, recipeID int) error {
-	removeRecipeQuery := `DELETE FROM user_liked_recipes WHERE user_id = ? AND recipe_id = ?;`
+	removeRecipeQuery := `DELETE FROM user_liked_recipes WHERE user_id = $1 AND recipe_id = $2;`
 	result, err := s.db.Exec(removeRecipeQuery, userID, recipeID)
 	if err != nil {
 		return errors.NewInternalServerError("Database error", err)
@@ -109,7 +109,7 @@ func (s *UserService) removeLikedRecipe(userID string, recipeID int) error {
 func (s *UserService) updateUserProfile(userID string, username, email string) (UserProfile, error) {
 	var exists bool
 	err := s.db.QueryRow(
-		"SELECT EXISTS(SELECT 1 FROM users WHERE (username = ? OR email = ?) AND id != ?)",
+		"SELECT EXISTS(SELECT 1 FROM users WHERE (username = $1 OR email = $2) AND id != $3)",
 		username, email, userID,
 	).Scan(&exists)
 
@@ -121,7 +121,7 @@ func (s *UserService) updateUserProfile(userID string, username, email string) (
 	}
 
 	_, err = s.db.Exec(
-		"UPDATE users SET username = ?, email = ?, updated_at = datetime('now') WHERE id = ?",
+		"UPDATE users SET username = $1, email = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3",
 		username, email, userID,
 	)
 	if err != nil {
@@ -133,7 +133,7 @@ func (s *UserService) updateUserProfile(userID string, username, email string) (
 
 func (s *UserService) changePassword(userID string, currentPassword, newPassword string) error {
 	var storedEncodedPasswordHash string
-	err := s.db.QueryRow("SELECT password_hash FROM users WHERE id = ?", userID).Scan(&storedEncodedPasswordHash)
+	err := s.db.QueryRow("SELECT password_hash FROM users WHERE id = $1", userID).Scan(&storedEncodedPasswordHash)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return errors.NewNotFoundError("User not found")
@@ -155,7 +155,7 @@ func (s *UserService) changePassword(userID string, currentPassword, newPassword
 	}
 
 	_, err = s.db.Exec(
-		"UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?",
+		"UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
 		newEncodedPasswordHash, userID,
 	)
 	if err != nil {
@@ -167,7 +167,7 @@ func (s *UserService) changePassword(userID string, currentPassword, newPassword
 
 func (s *UserService) deleteAccount(userID string, password string) error {
 	var storedEncodedPasswordHash string
-	err := s.db.QueryRow("SELECT password_hash FROM users WHERE id = ?", userID).Scan(&storedEncodedPasswordHash)
+	err := s.db.QueryRow("SELECT password_hash FROM users WHERE id = $1", userID).Scan(&storedEncodedPasswordHash)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return errors.NewNotFoundError("User not found")
@@ -183,7 +183,7 @@ func (s *UserService) deleteAccount(userID string, password string) error {
 		return errors.NewBadRequestError("Password is incorrect")
 	}
 
-	_, err = s.db.Exec("DELETE FROM users WHERE id = ?", userID)
+	_, err = s.db.Exec("DELETE FROM users WHERE id = $1", userID)
 	if err != nil {
 		return errors.NewInternalServerError("Failed to delete account", err)
 	}

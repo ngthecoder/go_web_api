@@ -27,10 +27,6 @@ export default function RegisterPage() {
     }
   }, [isAuthenticated, router]);
 
-  useEffect(() => {
-    clearError();
-  }, [formData, clearError]);
-
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
@@ -65,6 +61,10 @@ export default function RegisterPage() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (error) {
+      clearError();
+    }
+    
     const { name, value } = e.target;
     
     if (name === 'confirmPassword') {

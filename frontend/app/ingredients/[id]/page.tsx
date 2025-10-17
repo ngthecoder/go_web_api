@@ -45,7 +45,6 @@ export default function IngredientDetailPage() {
           return res.json();
         })
         .then(data => {
-            console.log('API Response:', data);
             setIngredientDetail(data);
             setLoading(false);
         })

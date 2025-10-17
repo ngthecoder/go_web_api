@@ -67,7 +67,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (storedToken && storedUser) {
           if (isTokenExpired(storedToken)) {
-            console.log('Token expired, clearing auth state');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             setToken(null);
@@ -126,7 +125,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
       setError(errorMessage);
-      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -151,7 +149,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       setError(errorMessage);
-      throw error;
     } finally {
       setIsLoading(false);
     }

@@ -128,7 +128,7 @@ export default function FindRecipesPage() {
           )}
 
           <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
-            {filteredIngredients.map(ingredient => (
+            {filteredIngredients?.map(ingredient => (
               <label
                 key={ingredient.id}
                 className={`flex items-center p-3 border rounded cursor-pointer transition-colors ${
@@ -171,7 +171,7 @@ export default function FindRecipesPage() {
           )}
 
           <div className="space-y-4">
-            {matchedRecipes.map(recipe => (
+            {matchedRecipes?.map(recipe => (
               <div key={recipe.id} className="border rounded-lg p-4 hover:shadow-lg transition-shadow relative">
                 <div className="absolute top-4 right-4">
                   <LikeButton 

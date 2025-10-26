@@ -29,7 +29,11 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_PATH: postgres://recipeuser:recipepassword@postgres:5432/recipes?sslmode=disable
+      POSTGRES_USER: recipeuser
+      POSTGRES_DB: recipes
+      POSTGRES_PASSWORD: recipepassword
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
       JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
       PORT: 8000
       ALLOWED_ORIGINS: http://localhost:3000

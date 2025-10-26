@@ -833,6 +833,30 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(stats)
 }
 
+func getDatabaseURL() string {
+	dbPath := os.Getenv("DATABASE_PATH")
+
+	if strings.HasPrefix(dbPath, "postgres://") || strings.HasPrefix(dbPath, "sqlite") {
+		return dbPath
+	}
+
+	user := os.Getenv("POSTGRES_USER")
+	password := os.Getenv("POSTGRES_PASSWORD")
+	host := os.Getenv("POSTGRES_HOST")
+	port := os.Getenv("POSTGRES_PORT")
+	dbname := os.Getenv("POSTGRES_DB")
+
+	if host == "" {
+		host = "postgres"
+	}
+	if port == "" {
+		port = "5432"
+	}
+
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		user, password, host, port, dbname)
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -840,7 +864,7 @@ func main() {
 	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")
-	dbPath := os.Getenv("DATABASE_PATH")
+	dbPath := getDatabaseURL()
 	port := os.Getenv("PORT")
 	allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
 
@@ -850,7 +874,7 @@ func main() {
 	log.Println("Successfully loaded JWT_SECRET")
 
 	if dbPath == "" {
-		log.Fatal("Missing DATABASE_PATH attribute")
+		log.Fatal("Missing database configuration. Please provide either DATABASE_PATH or POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB")
 	}
 	log.Println("Successfully loaded DATABASE_PATH")
 

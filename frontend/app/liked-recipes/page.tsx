@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import LikeButton from '@/components/LikeButton';
 import { useAuth } from '@/contexts/AuthContext';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface Recipe {
   id: number;
@@ -32,7 +33,7 @@ export default function LikedRecipesPage() {
       }
 
       try {
-        const response = await fetch('http://localhost:8000/api/user/liked-recipes', {
+        const response = await fetch(API_ENDPOINTS.likedRecipes, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

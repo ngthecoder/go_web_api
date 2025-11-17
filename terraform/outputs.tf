@@ -99,9 +99,9 @@ output "ecs_cluster_name" {
   value       = aws_ecs_cluster.main.name
 }
 
-output "database_config_secret_arn" {
-  description = "ARN of the database config secret in Secrets Manager"
-  value       = aws_secretsmanager_secret.database_config.arn
+output "docker_login_command" {
+  description = "Command to login to ECR for pushing images"
+  value       = "aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${split("/", aws_ecr_repository.backend.repository_url)[0]}"
 }
 
 output "jwt_secret_arn" {

@@ -72,11 +72,11 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getDatabaseConfig() database.Config {
-	dbPath := os.Getenv("DATABASE_URL")
+	dbURL := os.Getenv("DATABASE_URL")
 
-	if dbPath != "" {
+	if dbURL != "" {
 		log.Println("Using DATABASE_URL for database connection")
-		return database.Config{URL: dbPath}
+		return database.Config{URL: dbURL}
 	}
 
 	return database.Config{

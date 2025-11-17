@@ -20,8 +20,12 @@ import (
 
 func enableCORS(allowedOrigins []string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
 		for _, allowedOrigin := range allowedOrigins {
-			w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+			if origin == allowedOrigin {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				break
+			}
 		}
 
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")

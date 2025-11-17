@@ -7,7 +7,7 @@ resource "random_password" "db_password" {
 resource "aws_secretsmanager_secret" "db_password" {
   name                    = "${var.project_name}-db-password"
   description             = "Database password for RDS PostgreSQL instance"
-  recovery_window_in_days = 7
+  recovery_window_in_days = 0
 
   tags = {
     Name = "${var.project_name}-db-password"
@@ -22,7 +22,7 @@ resource "aws_secretsmanager_secret_version" "db_password" {
 resource "aws_secretsmanager_secret" "database_url" {
   name                    = "${var.project_name}-database-url"
   description             = "Database connection string"
-  recovery_window_in_days = 7
+  recovery_window_in_days = 0
 
   tags = {
     Name = "${var.project_name}-database-url"
@@ -31,29 +31,7 @@ resource "aws_secretsmanager_secret" "database_url" {
 
 resource "aws_secretsmanager_secret_version" "database_url" {
   secret_id     = aws_secretsmanager_secret.database_url.id
-  secret_string = "postgresql://${aws_db_instance.main.username}:${random_password.db_password.result}@${aws_db_instance.main.endpoint}/${aws_db_instance.main.db_name}"
-}
-
-resource "aws_secretsmanager_secret" "database_config" {
-  name                    = "${var.project_name}-database-config"
-  description             = "Complete database configuration including connection details"
-  recovery_window_in_days = 7
-
-  tags = {
-    Name = "${var.project_name}-database-config"
-  }
-}
-
-resource "aws_secretsmanager_secret_version" "database_config" {
-  secret_id = aws_secretsmanager_secret.database_config.id
-  secret_string = jsonencode({
-    username          = aws_db_instance.main.username
-    password          = random_password.db_password.result
-    host              = split(":", aws_db_instance.main.endpoint)[0]
-    port              = aws_db_instance.main.port
-    database          = aws_db_instance.main.db_name
-    connection_string = "postgresql://${aws_db_instance.main.username}:${random_password.db_password.result}@${aws_db_instance.main.endpoint}/${aws_db_instance.main.db_name}"
-  })
+  secret_string = "postgresql://${aws_db_instance.main.username}:${urlencode(random_password.db_password.result)}@${aws_db_instance.main.endpoint}/${aws_db_instance.main.db_name}"
 }
 
 resource "random_password" "jwt_secret" {
@@ -65,7 +43,7 @@ resource "random_password" "jwt_secret" {
 resource "aws_secretsmanager_secret" "jwt_secret" {
   name                    = "${var.project_name}-jwt-secret"
   description             = "JWT signing key for API authentication"
-  recovery_window_in_days = 7
+  recovery_window_in_days = 0
 
   tags = {
     Name        = "${var.project_name}-jwt-secret"
@@ -95,7 +73,6 @@ resource "aws_iam_policy" "secrets_access" {
         Resource = [
           aws_secretsmanager_secret.db_password.arn,
           aws_secretsmanager_secret.jwt_secret.arn,
-          aws_secretsmanager_secret.database_config.arn,
           aws_secretsmanager_secret.database_url.arn
         ]
       }

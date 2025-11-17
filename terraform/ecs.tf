@@ -128,7 +128,11 @@ resource "aws_ecs_task_definition" "backend" {
         {
           name  = "ENVIRONMENT"
           value = "production"
-        }
+        },
+        {
+          name  = "ALLOWED_ORIGINS"
+          value = "http://${aws_lb.frontend.dns_name},https://${aws_lb.frontend.dns_name}"
+        },
       ]
 
       secrets = [

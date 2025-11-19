@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -48,9 +49,17 @@ func NewConflictError(message string) *HTTPError {
 }
 
 func WriteHTTPError(w http.ResponseWriter, err error) {
+	w.Header().Set("Content-Type", "application/json")
+
 	if httpErr, ok := err.(*HTTPError); ok {
-		http.Error(w, httpErr.Message, httpErr.StatusCode)
+		w.WriteHeader(httpErr.StatusCode)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": httpErr.Message,
+		})
 	} else {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "Internal server error",
+		})
 	}
 }

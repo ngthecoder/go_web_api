@@ -47,7 +47,7 @@ func (h *UserHandler) GetLikedRecipes(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserHandler) AddLikedRecipe(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.WriteHTTPError(w, errors.NewMethodNotAllowedError())
 		return
 	}
 
@@ -73,7 +73,7 @@ func (h *UserHandler) AddLikedRecipe(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserHandler) RemoveLikedRecipe(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.WriteHTTPError(w, errors.NewMethodNotAllowedError())
 		return
 	}
 
@@ -104,7 +104,7 @@ func (h *UserHandler) RemoveLikedRecipe(w http.ResponseWriter, r *http.Request) 
 
 func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.WriteHTTPError(w, errors.NewMethodNotAllowedError())
 		return
 	}
 
@@ -135,7 +135,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.WriteHTTPError(w, errors.NewMethodNotAllowedError())
 		return
 	}
 
@@ -171,7 +171,7 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.WriteHTTPError(w, errors.NewMethodNotAllowedError())
 		return
 	}
 

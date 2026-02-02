@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+
+	"github.com/ngthecoder/go_web_api/internal/errors"
 )
 
 type AuthHandler struct {
@@ -21,13 +23,13 @@ func (h *AuthHandler) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		authHeader := r.Header.Get("Authorization")
 
 		if authHeader == "" {
-			http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+			errors.WriteHTTPError(w, errors.NewUnauthorizedError("Authorization header missing"))
 			return
 		}
 
 		claims, err := h.service.validateJWT(authHeader)
 		if err != nil {
-			http.Error(w, "Invalid or expired JWT token", http.StatusUnauthorized)
+			errors.WriteHTTPError(w, errors.NewUnauthorizedError("Invalid or expired token"))
 			return
 		}
 
@@ -60,29 +62,29 @@ func (h *AuthHandler) OptionalAuthMiddleware(next http.HandlerFunc) http.Handler
 
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.WriteHTTPError(w, errors.NewMethodNotAllowedError())
 		return
 	}
 
 	var request RegisterRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid JSON"))
 		return
 	}
 
 	if request.Username == "" || request.Email == "" || request.Password == "" {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Username, email, and password are required"))
 		return
 	}
 
 	response, err := h.service.registerUser(request)
 	if err != nil {
 		if err == ErrUserExists {
-			http.Error(w, "User already exists", http.StatusConflict)
+			errors.WriteHTTPError(w, errors.NewConflictError("User already exists"))
 			return
 		}
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		errors.WriteHTTPError(w, errors.NewInternalServerError("Registration failed", err))
 		return
 	}
 
@@ -93,29 +95,29 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		errors.WriteHTTPError(w, errors.NewMethodNotAllowedError())
 		return
 	}
 
 	var request LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Invalid JSON"))
 		return
 	}
 
 	if request.Email == "" || request.Password == "" {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		errors.WriteHTTPError(w, errors.NewBadRequestError("Email and password are required"))
 		return
 	}
 
 	response, err := h.service.loginUser(request)
 	if err != nil {
 		if err == ErrInvalidCredentials {
-			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+			errors.WriteHTTPError(w, errors.NewUnauthorizedError("Invalid email or password"))
 			return
 		}
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		errors.WriteHTTPError(w, errors.NewInternalServerError("Login failed", err))
 		return
 	}
 

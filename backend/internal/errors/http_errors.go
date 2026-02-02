@@ -48,6 +48,20 @@ func NewConflictError(message string) *HTTPError {
 	}
 }
 
+func NewUnauthorizedError(message string) *HTTPError {
+	return &HTTPError{
+		StatusCode: http.StatusUnauthorized,
+		Message:    message,
+	}
+}
+
+func NewMethodNotAllowedError() *HTTPError {
+	return &HTTPError{
+		StatusCode: http.StatusMethodNotAllowed,
+		Message:    "Method not allowed",
+	}
+}
+
 func WriteHTTPError(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json")
 

@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
@@ -33,7 +32,7 @@ func (h *AuthHandler) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user_id", claims.UserID)
+		ctx := SetUserIDInContext(r.Context(), claims.UserID)
 		r = r.WithContext(ctx)
 		next(w, r)
 	}
@@ -54,7 +53,7 @@ func (h *AuthHandler) OptionalAuthMiddleware(next http.HandlerFunc) http.Handler
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user_id", claims.UserID)
+		ctx := SetUserIDInContext(r.Context(), claims.UserID)
 		r = r.WithContext(ctx)
 		next(w, r)
 	}

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ngthecoder/go_web_api/internal/auth"
 	"github.com/ngthecoder/go_web_api/internal/errors"
 )
 
@@ -75,10 +76,7 @@ func (h *RecipesHandler) AllRecipesHandler(w http.ResponseWriter, r *http.Reques
 	totalPages := (total + limit - 1) / limit
 	hasNext := page < totalPages
 
-	userID := ""
-	if userIDValue := r.Context().Value("user_id"); userIDValue != nil {
-		userID = userIDValue.(string)
-	}
+	userID := auth.GetUserIDFromRequest(r)
 
 	recipes, err := h.recipesService.recipesRetriever(search, category, difficulty, sort, order, maxTime, limit, offset, userID)
 	if err != nil {
@@ -105,10 +103,7 @@ func (h *RecipesHandler) RecipeDetailHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	userID := ""
-	if userIDValue := r.Context().Value("user_id"); userIDValue != nil {
-		userID = userIDValue.(string)
-	}
+	userID := auth.GetUserIDFromRequest(r)
 
 	recipe, ingredients, err := h.recipesService.recipeDetailsWithIngredientsRetriever(id, userID)
 	if err != nil {
@@ -157,10 +152,7 @@ func (h *RecipesHandler) FindRecipesByIngredientsHandler(w http.ResponseWriter, 
 		return
 	}
 
-	userID := ""
-	if userIDValue := r.Context().Value("user_id"); userIDValue != nil {
-		userID = userIDValue.(string)
-	}
+	userID := auth.GetUserIDFromRequest(r)
 
 	matchedRecipes, err := h.recipesService.matchedRecipesRetriever(matchType, ingredientIDs, limit, userID)
 	if err != nil {

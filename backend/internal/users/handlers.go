@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ngthecoder/go_web_api/internal/auth"
 	"github.com/ngthecoder/go_web_api/internal/errors"
 )
 
@@ -20,7 +21,7 @@ func NewUserHandler(s *UserService) *UserHandler {
 }
 
 func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID := auth.GetUserIDFromRequest(r)
 
 	userProfile, err := h.userService.getUserProfile(userID)
 	if err != nil {
@@ -33,7 +34,7 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) GetLikedRecipes(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID := auth.GetUserIDFromRequest(r)
 
 	recipesList, err := h.userService.getLikedRecipes(userID)
 	if err != nil {
@@ -51,7 +52,7 @@ func (h *UserHandler) AddLikedRecipe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value("user_id").(string)
+	userID := auth.GetUserIDFromRequest(r)
 
 	var request LikedRecipeRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -77,7 +78,7 @@ func (h *UserHandler) RemoveLikedRecipe(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userID := r.Context().Value("user_id").(string)
+	userID := auth.GetUserIDFromRequest(r)
 
 	pathParts := strings.Split(r.URL.Path, "/")
 	if len(pathParts) != 5 || pathParts[4] == "" {
@@ -108,7 +109,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value("user_id").(string)
+	userID := auth.GetUserIDFromRequest(r)
 
 	var request UpdateProfileRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -139,7 +140,7 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value("user_id").(string)
+	userID := auth.GetUserIDFromRequest(r)
 
 	var request ChangePasswordRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -175,7 +176,7 @@ func (h *UserHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value("user_id").(string)
+	userID := auth.GetUserIDFromRequest(r)
 
 	var request DeleteAccountRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
